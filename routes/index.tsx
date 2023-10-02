@@ -1,24 +1,36 @@
-import { useSignal } from "@preact/signals";
-import Counter from "../islands/Counter.tsx";
+import BrightnessSlider from "../islands/BrightnessSlider.tsx";
+
+const baseUrl = Deno.env.get("BASE_URL") ?? "http://localhost:8080";
 
 export default function Home() {
-  const count = useSignal(3);
   return (
-    <div class="px-4 py-8 mx-auto bg-[#86efac]">
-      <div class="max-w-screen-md mx-auto flex flex-col items-center justify-center">
-        <img
-          class="my-6"
-          src="/logo.svg"
-          width="128"
-          height="128"
-          alt="the Fresh logo: a sliced lemon dripping with juice"
-        />
-        <h1 class="text-4xl font-bold">Welcome to Fresh</h1>
-        <p class="my-4">
-          Try updating this message in the
-          <code class="mx-2">./routes/index.tsx</code> file, and refresh.
-        </p>
-        <Counter count={count} />
+    <div class="p-4 mx-auto">
+      <div class="flex(& col) gap-4 items-center">
+        <h1 class="text-lg font-bold">SpotiLED</h1>
+        <div class="self-stretch flex(& col) gap-4 px-2 py-4 border-1 rounded-lg">
+          <BrightnessSlider baseUrl={baseUrl} />
+        </div>
+
+        <form
+          class="self-stretch flex justify-center p-2"
+          method="GET"
+          action={`${baseUrl}/mode`}
+        >
+          <input
+            class="px-4 py-2 rounded-full"
+            type="submit"
+            value="Toggle mode"
+          />
+        </form>
+
+        <form
+          class="self-stretch flex gap-2"
+          method="post"
+          action={`${baseUrl}/text`}
+        >
+          <input class="flex-1 border-1" name="text" placeholder="" />
+          <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
+        </form>
       </div>
     </div>
   );
