@@ -15,7 +15,7 @@ export default function BrightnessSlider({ baseUrl }: BrightnessSliderProps) {
       fetch(`${baseUrl}/settings/hue`),
     ])
       .then(([r1, r2]) =>
-        r1.ok && r2.ok ? Promise.all([r1.text(), r2.text()]) : ["16", "16"]
+        r1.ok && r2.ok ? Promise.all([r1.text(), r2.text()]) : ["63", "63"]
       )
       .then(([brightness, hue]) => {
         if (brightnessRef.current && hueRef.current) {
@@ -36,9 +36,9 @@ export default function BrightnessSlider({ baseUrl }: BrightnessSliderProps) {
         <input
           ref={brightnessRef}
           type="range"
-          value="16"
+          value="63"
           min="1"
-          max="31"
+          max="63"
           class="w-full h-4 rounded-lg appearance-none bg-gradient-to-r from-warmGray-200 to-white"
           onInput={(e) =>
             fetch(`${baseUrl}/settings/brightness`, {
