@@ -1,18 +1,14 @@
 import { createRef } from "preact";
 import { useEffect } from "preact/hooks";
 
-export interface BrightnessSliderProps {
-  baseUrl: string;
-}
-
-export default function BrightnessSlider({ baseUrl }: BrightnessSliderProps) {
+export default function BrightnessSlider() {
   const brightnessRef = createRef<HTMLInputElement>();
   const hueRef = createRef<HTMLInputElement>();
 
   useEffect(() => {
     Promise.all([
-      fetch(`${baseUrl}/settings/brightness`),
-      fetch(`${baseUrl}/settings/hue`),
+      fetch("/settings/brightness"),
+      fetch("/settings/hue"),
     ])
       .then(([r1, r2]) =>
         r1.ok && r2.ok ? Promise.all([r1.text(), r2.text()]) : ["63", "63"]
@@ -41,7 +37,7 @@ export default function BrightnessSlider({ baseUrl }: BrightnessSliderProps) {
           max="63"
           class="w-full h-4 rounded-lg appearance-none bg-gradient-to-r from-warmGray-200 to-white"
           onInput={(e) =>
-            fetch(`${baseUrl}/settings/brightness`, {
+            fetch("/settings/brightness", {
               method: "POST",
               body: e.currentTarget.value,
             })}
@@ -59,7 +55,7 @@ export default function BrightnessSlider({ baseUrl }: BrightnessSliderProps) {
           max="255"
           class="w-full h-4 rounded-lg appearance-none bg-gradient-to-r from-orange-200 to-white"
           onInput={(e) =>
-            fetch(`${baseUrl}/settings/hue`, {
+            fetch('/settings/hue', {
               method: "POST",
               body: e.currentTarget.value,
             })}
