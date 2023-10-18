@@ -1,12 +1,30 @@
+import { Handlers, PageProps } from "$fresh/server.ts";
 import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 
-export default function Home() {
+interface Data {
+  brightness: string;
+  hue: string;
+}
+
+export const handler: Handlers<Data> = {
+  GET(req, ctx) {
+    const brightness = req.headers.get("x-spotiled-brightness");
+    const hue = req.headers.get("x-spotiled-hue");
+
+    if (brightness === null || hue === null) {
+      return ctx.renderNotFound();
+    }
+    return ctx.render({ brightness, hue });
+  },
+};
+
+export default function Home({ data: { brightness, hue } }: PageProps<Data>) {
   return (
     <div class="p-4 mx-auto">
       <div class="flex(& col) gap-4 items-center">
         <h1 class="text-lg font-bold">SpotiLED</h1>
         <div class="self-stretch flex(& col) gap-4 px-2 py-4 border-1 rounded-lg">
-          <BrightnessSlider />
+          <BrightnessSlider {...{ brightness, hue }} />
         </div>
 
         <form
