@@ -44,8 +44,7 @@ export default function BrightnessSlider({ brightness, hue }: Props) {
         />
       </div>
       {/* HUE */}
-      {
-        /* <div class="flex gap-2 items-center">
+      <div class="flex gap-2 items-center">
         <span>🔥</span>
         <input
           type="range"
@@ -53,14 +52,12 @@ export default function BrightnessSlider({ brightness, hue }: Props) {
           min="0"
           max="255"
           class="w-full h-4 rounded-lg appearance-none bg-gradient-to-r from-orange-200 to-white"
-          onInput={(e) =>
-            fetch('/settings/hue', {
-              method: "POST",
-              body: e.currentTarget.value,
-            })}
+          onInput={debounceValue(
+            (value) => fetch("/settings/hue", { method: "POST", body: value }),
+            200,
+          )}
         />
-      </div> */
-      }
+      </div>
     </div>
   );
 }
