@@ -1,9 +1,25 @@
-import { createRef } from "preact";
+import { createRef, JSX } from "preact";
 import { useEffect } from "preact/hooks";
 
 interface Props {
   brightness: string;
   hue: string;
+}
+
+function debounceValue(f: (value: string) => void, timeout: number) {
+  let value = "";
+  let timer: number | null = null;
+  return (e: JSX.TargetedEvent<HTMLInputElement>) => {
+    value = e.currentTarget.value;
+    if (timer === null) {
+      const lastValue = value;
+      f(value);
+      timer = setTimeout(() => {
+        if (value !== lastValue) f(value);
+        timer = null;
+      }, timeout);
+    }
+  };
 }
 
 export default function BrightnessSlider({ brightness, hue }: Props) {
@@ -21,11 +37,10 @@ export default function BrightnessSlider({ brightness, hue }: Props) {
           min="1"
           max="63"
           class="w-full h-4 rounded-lg appearance-none bg-gradient-to-r from-warmGray-200 to-white"
-          onInput={(e) =>
-            fetch("/settings/brightness", {
-              method: "POST",
-              body: e.currentTarget.value,
-            })}
+          onInput={debounceValue(
+            (value) => fetch("/settings/brightness", { method: "POST", body: value }),
+            200,
+          )}
         />
       </div>
       {/* HUE */}
