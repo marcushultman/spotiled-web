@@ -2,6 +2,7 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import { useSignal } from "@preact/signals";
 import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 import SpotifyAuthToggle from "../islands/SpotifyAuthToggle.tsx";
+import SpotifyTokens from "../islands/SpotifyTokens.tsx";
 
 interface Data {
   brightness: string;
@@ -32,6 +33,7 @@ export default function Home({ data: { brightness, hue, isAuthenticating } }: Pa
         </div>
 
         <SpotifyAuthToggle isAuthenticating={useSignal(isAuthenticating)} />
+        <SpotifyTokens />
 
         <form
           class="self-stretch flex gap-2"

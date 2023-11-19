@@ -10,6 +10,7 @@ import * as $4 from "./routes/index.tsx";
 import * as $$0 from "./islands/BrightnessSlider.tsx";
 import * as $$1 from "./islands/Counter.tsx";
 import * as $$2 from "./islands/SpotifyAuthToggle.tsx";
+import * as $$3 from "./islands/SpotifyTokens.tsx";
 
 const manifest = {
   routes: {
@@ -23,6 +24,7 @@ const manifest = {
     "./islands/BrightnessSlider.tsx": $$0,
     "./islands/Counter.tsx": $$1,
     "./islands/SpotifyAuthToggle.tsx": $$2,
+    "./islands/SpotifyTokens.tsx": $$3,
   },
   baseUrl: import.meta.url,
 };
