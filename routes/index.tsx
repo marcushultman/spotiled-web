@@ -26,8 +26,8 @@ export const handler: Handlers<Data> = {
 export default function Home({ data: { brightness, hue, isAuthenticating } }: PageProps<Data>) {
   return (
     <div class="p-4 mx-auto">
-      <div class="flex(& col) gap-4 items-center">
-        <h1 class="text-lg font-bold">SpotiLED</h1>
+      <div class="flex(& col) gap-4">
+        <h1 class="text-lg font-bold self-center">SpotiLED</h1>
         <div class="self-stretch flex(& col) gap-4 px-2 py-4 border-1 rounded-lg">
           <BrightnessSlider {...{ brightness, hue }} />
         </div>

@@ -9,21 +9,21 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
   const toggle = () => props.isAuthenticating.value = !props.isAuthenticating.value;
   return (
     <form
-      class="self-stretch flex items-center justify-center p-2 gap-2"
+      class="flex items-center justify-center gap-2"
       method="POST"
       action={"/spotify/auth"}
       onSubmit={toggle}
     >
       <img
-        src="https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg"
-        class="w-8 h-8"
-      >
-      </img>
-      {JSON.stringify({ isAuthenticating: props.isAuthenticating.value })}
+        className="w-8 h-8"
+        src={props.isAuthenticating.value
+          ? "https://upload.wikimedia.org/wikipedia/commons/d/de/Ajax-loader.gif"
+          : "https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg"}
+      />
       <input
-        class="px-4 py-2 rounded-full"
+        class="px-4 py-2 bg-white text-green-600"
         type="submit"
-        value="Login"
+        value={props.isAuthenticating.value ? "Cancel" : "Login"}
       />
     </form>
   );
