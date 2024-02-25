@@ -1,51 +1,57 @@
-import { useSignal } from "@preact/signals";
+import { Signal, useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 
-export interface SpotifyTokensProps {}
-
-interface Token {
+export interface Token {
   accessToken: string;
   isPlaying: boolean;
   uri?: string;
 }
+
+export interface SpotifyTokensProps {
+  tokens: Signal<Token[]>;
+}
+
 interface Response {
   tokens: Token[];
 }
 
-interface Foo {
+interface Profile {
   displayName: string;
   isPlaying: boolean;
   image?: string;
 }
 
-export default function SpotifyTokens(props: SpotifyTokensProps) {
-  const arr = useSignal<Foo[]>([]);
+export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
+  const profiles = useSignal<Profile[]>([]);
 
-  const update = () =>
-    fetch("/spotify/tokens").then(async (res) => {
-      const { tokens }: Response = await res.json();
-      arr.value = await Promise.all(tokens.map(async ({ accessToken, ...props }): Promise<Foo> => {
+  const lookupProfiles = (tokens: Token[]) =>
+    Promise.all(
+      tokens.map(async ({ accessToken, ...props }): Promise<Profile> => {
         const res = await fetch("https://api.spotify.com/v1/me", {
           method: "GET",
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        const {
-          display_name: displayName = "",
-          images: [{ url: image = undefined } = {}],
-        } = await res.json();
+        const { display_name: displayName = "", images: [{ url: image = undefined } = {}] } =
+          await res.json();
         return { displayName, image, ...props };
-      }));
+      }),
+    );
+
+  const update = () =>
+    fetch("/spotify/tokens").then(async (res) => {
+      const { tokens }: Response = await res.json();
+      profiles.value = await lookupProfiles(tokens);
     });
 
   useEffect(() => {
-    update();
+    lookupProfiles(tokens.value).then((p) => profiles.value = p);
   }, []);
 
   return (
     <div class="py-2 flex flex-col">
       <h1 className="self-center text-lg pb-2">Spotify users</h1>
       <div className="flex flex-col gap-2">
-        {arr.value.map(({ displayName, isPlaying, image }) => (
+        {profiles.value.map(({ displayName, isPlaying, image }) => (
           <div className="flex items-center gap-2">
             <img className="w-10 h-10 rounded-full" src={image} />
             <span className="flex-1">{displayName}</span>

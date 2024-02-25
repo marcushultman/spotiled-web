@@ -2,28 +2,27 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import { useSignal } from "@preact/signals";
 import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 import SpotifyAuthToggle from "../islands/SpotifyAuthToggle.tsx";
-import SpotifyTokens from "../islands/SpotifyTokens.tsx";
+import SpotifyTokens, { Token } from "../islands/SpotifyTokens.tsx";
 
 interface Data {
   brightness: string;
   hue: string;
-  isAuthenticating: boolean;
+  spotify: {
+    isAuthenticating: boolean;
+    tokens: [Token];
+  };
 }
 
 export const handler: Handlers<Data> = {
   GET(req, ctx) {
-    const brightness = req.headers.get("x-spotiled-brightness");
-    const hue = req.headers.get("x-spotiled-hue");
-    const isAuthenticating = req.headers.get("x-spotify-auth") === "true";
-
-    if (brightness === null || hue === null) {
-      return ctx.renderNotFound();
-    }
-    return ctx.render({ brightness, hue, isAuthenticating });
+    const data = req.headers.get("x-spotiled");
+    return data ? ctx.render(JSON.parse(atob(data))) : ctx.renderNotFound();
   },
 };
 
-export default function Home({ data: { brightness, hue, isAuthenticating } }: PageProps<Data>) {
+export default function Home(
+  { data: { brightness, hue, spotify: { isAuthenticating, tokens } } }: PageProps<Data>,
+) {
   return (
     <div class="p-4 mx-auto">
       <div class="flex(& col) gap-4">
@@ -33,7 +32,7 @@ export default function Home({ data: { brightness, hue, isAuthenticating } }: Pa
         </div>
 
         <SpotifyAuthToggle isAuthenticating={useSignal(isAuthenticating)} />
-        <SpotifyTokens />
+        <SpotifyTokens tokens={useSignal(tokens)} />
 
         <form
           class="self-stretch flex gap-2"
