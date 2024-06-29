@@ -1,4 +1,5 @@
 import type { Signal } from "@preact/signals";
+import { useEffect, useState } from "preact/hooks";
 import { Button } from "../components/Button.tsx";
 
 interface SpotifyAuthToggleProps {
@@ -6,7 +7,24 @@ interface SpotifyAuthToggleProps {
 }
 
 export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
-  const toggle = () => props.isAuthenticating.value = !props.isAuthenticating.value;
+  const [timeoutHandle, setTimeoutHandle] = useState<number>();
+
+  const schedulePoll = () => {
+    props.isAuthenticating.value
+      ? setTimeoutHandle(setTimeout(poll, 3000))
+      : clearTimeout(timeoutHandle);
+  };
+  const toggle = () => {
+    props.isAuthenticating.value = !props.isAuthenticating.value;
+    schedulePoll();
+  };
+  const poll = async () => {
+    const res = await fetch("spotify/auth");
+    props.isAuthenticating.value = (res.ok ? await res.json() : {}).isAuthenticating ?? false;
+    schedulePoll();
+  };
+  useEffect(schedulePoll, []);
+
   return (
     <form
       class="flex items-center justify-center gap-2"
