@@ -42,6 +42,14 @@ export default function Home(
           <input class="flex-1 border-1" name="text" placeholder="" />
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
         </form>
+
+        <form class="self-stretch flex items-center gap-2" method="post" action="/ui/api/sports">
+          <input class="" type="radio" name="mode" value="true" />
+          <label for="html">ON</label>
+          <input class="" type="radio" name="mode" value="false" />
+          <label for="html">OFF</label>
+          <input class="px-4 py-2 rounded-full" type="submit" value="Poopy" />
+        </form>
       </div>
     </div>
   );
