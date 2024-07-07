@@ -1,106 +1,81 @@
 import { FreshContext } from "$fresh/server.ts";
-import { createCanvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
+import { createCanvas, EmulatedCanvas2D } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 import { transpose } from "../../src/transpose.ts";
+import { FIXTURE, LINEUP } from "../../src/sports_data.ts";
 
-const STATIC = {
-  get: "fixtures",
-  parameters: { league: "4", season: "2024", next: "1" },
-  errors: [],
-  results: 1,
-  paging: { current: 1, total: 1 },
-  response: [
-    {
-      fixture: {
-        id: 1219688,
-        referee: "A. Taylor",
-        timezone: "UTC",
-        date: "2024-07-05T16:00:00+00:00",
-        timestamp: 1720195200,
-        periods: { first: null, second: null },
-        venue: { id: 20739, name: "Stuttgart Arena", city: "Stuttgart" },
-        status: { long: "Not Started", short: "NS", elapsed: null },
-      },
-      league: {
-        id: 4,
-        name: "Euro Championship",
-        country: "World",
-        logo: "https://media.api-sports.io/football/leagues/4.png",
-        flag: null,
-        season: 2024,
-        round: "Quarter-finals",
-      },
-      teams: {
-        home: {
-          id: 9,
-          name: "Spain",
-          logo: "https://media.api-sports.io/football/teams/9.png",
-          winner: null,
-        },
-        away: {
-          id: 25,
-          name: "Germany",
-          logo: "https://media.api-sports.io/football/teams/25.png",
-          winner: null,
-        },
-      },
-      goals: { home: null as null | number, away: null as null | number },
-      score: {
-        halftime: { home: null, away: null },
-        fulltime: { home: null, away: null },
-        extratime: { home: null, away: null },
-        penalty: { home: null, away: null },
-      },
-    },
-  ],
-};
+// const SCHEDULED = ["TBD", "NS"];
+// const FINISHED = ["FT", "AET", "PEN"];
+// const MISC = ["PST", "CANC", "ABD", "AWD", "WO"];
 
-const SCHEDULED = ["TBD", "NS"];
-const FINISHED = ["FT", "AET", "PEN"];
-const MISC = ["PST", "CANC", "ABD", "AWD", "WO"];
+// const NOT_PLAYING = [...SCHEDULED, ...FINISHED, ...MISC];
 
-const NOT_PLAYING = [...SCHEDULED, ...FINISHED, ...MISC];
+const API = "https://v3.football.api-sports.io";
+const REQ_INIT = { headers: { "x-apisports-key": "4c470321f1e01c39d3b2df384f67c7c7" } };
 
-export const handler = async (_req: Request, _ctx: FreshContext): Promise<Response> => {
-  // const res = await fetch(
-  //   "https://v3.football.api-sports.io/fixtures?league=4&season=2024&next=1",
-  //   { headers: { "x-apisports-key": "4c470321f1e01c39d3b2df384f67c7c7" } },
-  // );
-  // const data = await res.json();
-  const data: any = await STATIC;
+function makeCanvas() {
+  return createCanvas(23, 16);
+}
 
-  const {
-    response: [
-      {
-        fixture: { status: { short: status } },
-        teams: { home: { name: home }, away: { name: away } },
-        goals: { home: homeGoals, away: awayGoals },
-      },
-    ],
-  } = data;
+function bufferFromCanvas(canvas: EmulatedCanvas2D) {
+  return transpose(23, canvas.getRawBuffer(0, 0, 23, 16));
+}
 
-  if (NOT_PLAYING.includes(status)) {
-    // return new Response(null, { status: 404 });
+export const handler = async (req: Request, _ctx: FreshContext): Promise<Response> => {
+  let res = await fetch(`${API}/fixtures?league=4&season=2024&live=all`, REQ_INIT);
+  const fixture = res.ok ? await res.json() as typeof FIXTURE : undefined;
+  // const fixture = await FIXTURE;
+
+  if (!fixture || !fixture.results) {
+    console.info("sports: no fixtures live");
+    return new Response(null, {
+      status: 404,
+      // headers: {
+      //   'x-spotiled-retry-in': ...?
+      // }
+    });
+  }
+  const accept = req.headers.get("accept");
+
+  const { response: [{ fixture: { id }, teams: { home, away }, goals }] } = fixture;
+
+  res = await fetch(`${API}/fixtures/lineups?fixture=${id}`, REQ_INIT);
+  const lineup = res.ok ? await res.json() as typeof LINEUP : undefined;
+  // const lineup = await LINEUP;
+
+  if (accept === "application/json") {
+    return Response.json({ fixture, lineup });
   }
 
-  const canvas = createCanvas(23, 16);
+  const teamColors = new Map(
+    lineup?.response.map(({ team }) => [team.id, `#${team.colors.player.primary}`] as const),
+  );
 
+  const homeColor = teamColors.get(home.id) ?? "#ffffff";
+  const awayColor = teamColors.get(away.id) ?? "#ffffff";
+
+  const canvas = makeCanvas();
   const ctx = canvas.getContext("2d");
-  ctx.scale(0.75, 1);
 
-  ctx.font = "7px monospace";
+  ctx.fillStyle = homeColor;
+  ctx.fillRect(0, 0, 2, 16);
+  ctx.fillStyle = awayColor;
+  ctx.fillRect(21, 0, 2, 16);
+
+  ctx.scale(0.5, 1);
   ctx.fillStyle = "white";
-  ctx.fillText(home.slice(0, 3).toUpperCase(), 1 / 0.75, 6);
-  ctx.fillText(away.slice(0, 3).toUpperCase(), 13 / 0.75, 15);
+  ctx.font = "16px monospace";
+  ctx.fillText(goals.home.toString(), 3 / 0.5, 14);
+  ctx.fillText(goals.away.toString(), 15 / 0.5, 14);
 
-  ctx.font = "9px monospace";
-  ctx.fillText((awayGoals ?? 1).toString(), 17 / 0.75, 8);
-  ctx.fillText((homeGoals ?? 2).toString(), 1 / 0.75, 15);
+  if (accept === "text/url") {
+    return new Response(canvas.toDataURL());
+  }
 
-  const buffer = canvas.getRawBuffer(0, 0, 23, 16);
+  const logoColor = goals.home > goals.away
+    ? homeColor.slice(1)
+    : goals.home < goals.away
+    ? awayColor.slice(1)
+    : "ffffff";
 
-  return new Response(transpose(23, buffer), {
-    headers: {
-      "x-spotiled-image-url": canvas.toDataURL("png"),
-    },
-  });
+  return new Response(bufferFromCanvas(canvas), { headers: { "x-spotiled-logo": logoColor } });
 };
