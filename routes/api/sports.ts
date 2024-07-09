@@ -8,18 +8,18 @@ import { FIXTURES, LINEUP } from "../../src/sports_data.ts";
 // const NOT_PLAYING = [...SCHEDULED, ...FINISHED, ...MISC];
 
 const API = "https://v3.football.api-sports.io";
-const API_CACHE = await caches.open(API);
+const API_CACHE = "caches" in window ? await caches.open(API) : undefined;
 const REQ_INIT = { headers: { "x-apisports-key": "4c470321f1e01c39d3b2df384f67c7c7" } };
 
 async function fetchWithCache(req: Request, refresh = false) {
-  let res = await API_CACHE.match(req);
+  let res = await API_CACHE?.match(req);
   const cacheHit = res !== undefined;
 
   if (!res || refresh) {
     console.info(`refreshing ${req.url}...`);
     res = await fetch(req);
     if (res.ok) {
-      await API_CACHE.put(req, res.clone());
+      await API_CACHE?.put(req, res.clone());
     }
   }
   return [res, cacheHit] as const;
