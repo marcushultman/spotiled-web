@@ -3,7 +3,8 @@ import { useSignal } from "@preact/signals";
 import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 import SpotifyAuthToggle from "../islands/SpotifyAuthToggle.tsx";
 import SpotifyTokens, { Token } from "../islands/SpotifyTokens.tsx";
-import { FIXTURE, LINEUP } from "../src/sports_data.ts";
+import { listFixtures } from "./api/sports.ts";
+import * as moment from "npm:moment";
 
 interface Data {
   brightness: string;
@@ -12,8 +13,7 @@ interface Data {
     isAuthenticating: boolean;
     tokens: [Token];
   };
-  fixture?: typeof FIXTURE;
-  lineup?: typeof LINEUP;
+  fixtures: Awaited<ReturnType<typeof listFixtures>>;
 }
 
 export const handler: Handlers<Data> = {
@@ -22,36 +22,32 @@ export const handler: Handlers<Data> = {
     if (!data) {
       return ctx.renderNotFound();
     }
-
-    const res = await fetch(new URL("/api/sports", ctx.url), {
-      headers: { "accept": "application/json" },
-    });
-    return ctx.render({ ...JSON.parse(atob(data)), ...res.ok ? await res.json() : {} });
+    return ctx.render({ ...JSON.parse(atob(data)), fixtures: await listFixtures() });
   },
 };
 
-function FootballFixture({ fixture, lineup }: { fixture: typeof FIXTURE; lineup: typeof LINEUP }) {
-  const { teams: { home, away }, goals } = fixture.response[0];
+type FixtureResponse = NonNullable<Awaited<ReturnType<typeof listFixtures>>>["response"][0];
 
-  const findTeamColor = (id: number) =>
-    lineup.response.find(({ team }) => team.id === id)?.team.colors.player.primary;
+function FootballFixture({ response }: { response: FixtureResponse }) {
+  const { teams: { home, away }, goals, fixture: { id } } = response;
 
-  const teamColor = (id: number) => <div class={`w-4 bg-[#${findTeamColor(id)}]`} />;
-  const teamLabel = (name: string, goals: number) => (
+  // const findTeamColor = (id: number) =>  lineup.response.find(({ team }) => team.id === id)?.team.colors.player.primary;
+
+  const teamLabel = (name: string, goals: number | null) => (
     <div class="flex-1 text-center">
       <div>{name}</div>
       <div class="text-lg font-bold">{goals}</div>
     </div>
   );
   return (
-    <form method="post" action="/ui/api/sports">
+    <form method="post" action={`/ui/api/sports/${id}`}>
       <button class="w-full" type="submit">
-        <div class="flex-1 flex gap-4">
-          {teamColor(home.id)}
+        <div class="flex-1 flex gap-4 items-center">
+          <img class="w-6 h-5" src={home.logo} />
           {teamLabel(home.name, goals.home)}
-          <div>vs</div>
+          <span>vs</span>
           {teamLabel(away.name, goals.away)}
-          {teamColor(away.id)}
+          <img class="w-6 h-5" src={away.logo} />
         </div>
       </button>
     </form>
@@ -64,8 +60,7 @@ export default function Home(
       brightness,
       hue,
       spotify: { isAuthenticating, tokens },
-      fixture,
-      lineup,
+      fixtures,
     },
   }: PageProps<Data>,
 ) {
@@ -89,13 +84,18 @@ export default function Home(
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
         </form>
 
-        {fixture && lineup
-          ? (
-            <>
-              <h1 class="text-center text-xl mb-2">UEFA</h1>
-              <FootballFixture {...{ fixture, lineup }} />
-            </>
-          )
+        {fixtures?.results
+          ? [
+            <h1 class="text-center text-xl mb-2">UEFA</h1>,
+            Object.entries(Object.groupBy(fixtures.response, ({ date }) => date)).map(
+              ([date, res]) => [
+                <div class="text-center bg-gray-200 rounded-full">
+                  {moment.default(date).calendar()}
+                </div>,
+                res?.map((res) => <FootballFixture response={res} />),
+              ],
+            ),
+          ]
           : <>No sport games playing</>}
 
         {
