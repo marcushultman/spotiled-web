@@ -98,6 +98,10 @@ export default function Home(
           ]
           : <>No sport games playing</>}
 
+        <form method="post" action={`/led/spv2`}>
+          <button class="w-full" type="submit">SPv2</button>
+        </form>
+
         {
           /* <form class="self-stretch flex items-center gap-2" method="post" action="/ui/api/sports">
           <input class="" type="radio" name="mode" value="true" />

@@ -9,6 +9,7 @@ import * as $api_sports from "./routes/api/sports.ts";
 import * as $api_sports_fixture_ from "./routes/api/sports/[fixture].ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
+import * as $led_spv2 from "./routes/led/spv2.ts";
 import * as $BrightnessSlider from "./islands/BrightnessSlider.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $SpotifyAuthToggle from "./islands/SpotifyAuthToggle.tsx";
@@ -24,6 +25,7 @@ const manifest = {
     "./routes/api/sports/[fixture].ts": $api_sports_fixture_,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
+    "./routes/led/spv2.ts": $led_spv2,
   },
   islands: {
     "./islands/BrightnessSlider.tsx": $BrightnessSlider,

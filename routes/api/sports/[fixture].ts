@@ -1,14 +1,10 @@
 import { RouteContext } from "$fresh/server.ts";
-import { createCanvas, EmulatedCanvas2D } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
+import { createCanvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 import { transpose } from "../../../src/transpose.ts";
 import { getFixtureAndLineup } from "../sports.ts";
 
 function makeCanvas() {
   return createCanvas(23, 16);
-}
-
-function bufferFromCanvas(canvas: EmulatedCanvas2D) {
-  return transpose(23, canvas.getRawBuffer(0, 0, 23, 16));
 }
 
 export default async function Fixture(_: Request, routeCtx: RouteContext): Promise<Response> {
@@ -35,7 +31,9 @@ export default async function Fixture(_: Request, routeCtx: RouteContext): Promi
     ctx.fillStyle = "white";
     ctx.font = "12px monospace";
     ctx.fillText(`${Math.round(untilStart / (60 * 1000))} min`, 3 / 0.5, 12);
-    return new Response(bufferFromCanvas(canvas), { headers: { "x-spotiled-logo": "ffffff" } });
+    return new Response(transpose(ctx.getImageData(0, 0, 23, 16)), {
+      headers: { "x-spotiled-logo": "ffffff" },
+    });
   }
 
   if (goals.home === null || goals.away === null || !homeColor || !awayColor) {
@@ -59,5 +57,7 @@ export default async function Fixture(_: Request, routeCtx: RouteContext): Promi
     ? awayColor.slice(1)
     : "ffffff";
 
-  return new Response(bufferFromCanvas(canvas), { headers: { "x-spotiled-logo": logoColor } });
+  return new Response(transpose(ctx.getImageData(0, 0, 23, 16)), {
+    headers: { "x-spotiled-logo": logoColor },
+  });
 }
