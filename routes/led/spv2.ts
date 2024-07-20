@@ -151,7 +151,9 @@ async function authenticate(data: SPv2Data) {
 
 type OnRetryAfter = (retryAfter: number) => void;
 
-async function refreshToken(data: SPv2Data, token: Token, onRetryAfter: OnRetryAfter) {
+class DidLogoutError extends Error {}
+
+async function refreshToken(token: Token, onRetryAfter: OnRetryAfter) {
   const res = await fetch(AUTH_TOKEN_URL, {
     method: "POST",
     headers: { "content-type": XWWW_FORM_URL_ENCODED },
@@ -160,23 +162,21 @@ async function refreshToken(data: SPv2Data, token: Token, onRetryAfter: OnRetryA
   });
 
   if (!res.ok) {
-    console.warn("logout");
-    return makeResponse({ "led/spv2": null });
+    return new DidLogoutError();
   }
 
   const { access_token, refresh_token }: TokenData = await res.json();
   token.access_token = access_token;
   token.refresh_token = refresh_token;
 
-  return requestNowPlaying(data, token, onRetryAfter, true);
+  return requestNowPlaying(token, onRetryAfter, true);
 }
 
 async function requestNowPlaying(
-  data: SPv2Data,
   token: Token,
   onRetryAfter: OnRetryAfter,
   disableRetry = false,
-): Promise<Response | Display | undefined> {
+): Promise<Display | DidLogoutError | undefined> {
   const res = await fetch(PLAYER_URL, {
     headers: { authorization: `Bearer ${token.access_token}` },
   });
@@ -189,7 +189,7 @@ async function requestNowPlaying(
       onRetryAfter((retryAfter ? parseInt(retryAfter) : 60) * 1000);
       return;
     }
-    return disableRetry ? undefined : refreshToken(data, token, onRetryAfter);
+    return disableRetry ? undefined : refreshToken(token, onRetryAfter);
   }
 
   if (res.status == 204) {
@@ -212,7 +212,7 @@ async function requestNowPlaying(
   }
 
   const displayFromLengths = (lengths: [number, number][]) => {
-    console.log("now playing", uri);
+    console.log(token.access_token.slice(0, 8), "now playing", uri);
     return ({
       logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
       bytes: makeDisplay((ctx) => {
@@ -226,7 +226,7 @@ async function requestNowPlaying(
     return displayFromLengths(token.nowPlaying.lengths);
   }
 
-  console.log("fetch scannable", uri);
+  console.log(token.access_token.slice(0, 8), "fetch scannable", uri);
   const [res1] = await Promise.all([
     fetch(`${SCANNABLES_CDN_URL}${uri}?format=svg`),
     // fetch(AUDIO_FEATURES_URL + id, {
@@ -285,19 +285,18 @@ export const handler: Handlers = {
 
     let poll = requestBackoff(data.numRequests ?? 0);
 
-    for (let i = 0; i < (data.tokens?.length ?? 0); ++i) {
-      const token = data.tokens![i];
+    for (let i = 0; data.tokens && i < data.tokens.length; ++i) {
+      const token = data.tokens[i];
       const result = await requestNowPlaying(
-        data,
         token,
         (retryAfter) => poll = Math.max(poll, retryAfter),
       );
-      if (result instanceof Response) {
-        return result;
-      }
-      if (result) {
+      if (result instanceof DidLogoutError) {
+        console.warn(token.access_token.slice(0, 8), "logged out");
+        data.tokens.splice(i, 1);
+      } else if (result) {
         // Re-order tokens
-        data.tokens = [token, ...data.tokens!.slice(0, i), ...data.tokens!.slice(i + 1)];
+        data.tokens.unshift(...data.tokens.splice(i, 1));
         data.numRequests = 0;
         return makeSpv2Response(data, result, { poll: 5000 });
       }
