@@ -182,14 +182,17 @@ async function requestNowPlaying(
   });
 
   if (!res.ok) {
-    console.error(`fetch now playing failed with status ${res.status}`);
-
     if (res.status == 429 || res.status == 503) {
+      console.error(`fetch now playing rate limited (${res.status})`);
       const retryAfter = res.headers.get("retry-after");
       onRetryAfter((retryAfter ? parseInt(retryAfter) : 60) * 1000);
       return;
     }
-    return disableRetry ? undefined : refreshToken(token, onRetryAfter);
+    if (!disableRetry) {
+      console.error(`fetch now playing failed with status ${res.status}`);
+      return refreshToken(token, onRetryAfter);
+    }
+    return;
   }
 
   if (res.status == 204) {
