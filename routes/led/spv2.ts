@@ -64,8 +64,7 @@ async function requestDeviceCode(): Promise<DeviceCode> {
   });
 
   if (!res.ok) {
-    console.error("failed to get device_code");
-    throw new Error();
+    throw new Error("failed to get device_code");
   }
 
   interface DeviceFlowData {
@@ -96,18 +95,15 @@ async function pollToken(deviceCode: DeviceCode): Promise<Token> {
   });
 
   if (response.status / 100 == 5) {
-    console.error("failed to get auth_code or error");
-    throw new Error();
+    throw new Error("failed to get auth_code or error");
   }
 
   const { error, access_token, refresh_token }: TokenData = await response.json();
 
   if (error == "authorization_pending") {
-    console.info("auth_code error:", error);
     throw new AuthorizationPendingError(deviceCode);
   } else if (error) {
-    console.error("auth_code error:", error);
-    throw new Error(error);
+    throw new Error(`auth_code error: ${error}`);
   }
 
   console.info(
@@ -129,6 +125,7 @@ async function authenticate(data: SPv2Data) {
     data.tokens = [await pollToken(deviceCode), ...data.tokens ?? []];
   } catch (e: unknown) {
     if (e instanceof AuthorizationPendingError) {
+      console.log("authorization_pending");
       return makeSpv2Response(
         data,
         {
@@ -146,6 +143,7 @@ async function authenticate(data: SPv2Data) {
         { poll: e.deviceCode.interval * 1000 },
       );
     }
+    console.error(e instanceof Error ? e.message : `Unknown error: ${e}`);
     return makeSpv2Response({ ...data, auth: {} }, undefined, { poll: 5000 });
   }
   delete data.auth;
@@ -154,9 +152,6 @@ async function authenticate(data: SPv2Data) {
 type OnRetryAfter = (retryAfter: number) => void;
 
 async function refreshToken(data: SPv2Data, token: Token, onRetryAfter: OnRetryAfter) {
-  // todo:
-  token.access_token = "new token plz";
-
   const res = await fetch(AUTH_TOKEN_URL, {
     method: "POST",
     headers: { "content-type": XWWW_FORM_URL_ENCODED },
@@ -187,15 +182,14 @@ async function requestNowPlaying(
   });
 
   if (!res.ok) {
+    console.error(`fetch now playing failed with status ${res.status}`);
+
     if (res.status == 429 || res.status == 503) {
       const retryAfter = res.headers.get("retry-after");
       onRetryAfter((retryAfter ? parseInt(retryAfter) : 60) * 1000);
       return;
     }
-    if (disableRetry) {
-      return;
-    }
-    return refreshToken(data, token, onRetryAfter);
+    return disableRetry ? undefined : refreshToken(data, token, onRetryAfter);
   }
 
   if (res.status == 204) {
@@ -217,20 +211,22 @@ async function requestNowPlaying(
     return;
   }
 
-  const displayFromLengths = (lengths: [number, number][]) => ({
-    logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
-    bytes: makeDisplay((ctx) => {
-      ctx.fillStyle = "white";
-      lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
-    }),
-  });
+  const displayFromLengths = (lengths: [number, number][]) => {
+    console.log("now playing", uri);
+    return ({
+      logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
+      bytes: makeDisplay((ctx) => {
+        ctx.fillStyle = "white";
+        lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
+      }),
+    });
+  };
 
   if (token.nowPlaying?.id === id) {
-    console.log("same id", id);
     return displayFromLengths(token.nowPlaying.lengths);
   }
 
-  console.log("fetch scannable");
+  console.log("fetch scannable", uri);
   const [res1] = await Promise.all([
     fetch(`${SCANNABLES_CDN_URL}${uri}?format=svg`),
     // fetch(AUDIO_FEATURES_URL + id, {
@@ -251,7 +247,7 @@ async function requestNowPlaying(
     });
 
   token.nowPlaying = { id, lengths };
-  displayFromLengths(lengths);
+  return displayFromLengths(lengths);
 }
 
 function isLikelyToPlay() {
@@ -274,7 +270,6 @@ export const handler: Handlers = {
   async POST(req, _) {
     const url = new URL(req.url);
     const { data } = await decodeServiceRequest<SPv2Data>(req, {});
-    console.log("spv2", data.tokens?.length ?? 0, "tokens");
 
     if (data.auth || url.searchParams.has("auth")) {
       const res = await authenticate(data);
