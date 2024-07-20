@@ -14,6 +14,8 @@ assert(CLIENT_SECRET);
 const AUTH_DEVICE_CODE_URL = "https://accounts.spotify.com/api/device/code";
 const AUTH_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const PLAYER_URL = "https://api.spotify.com/v1/me/player?additional_types=track,episode";
+const SCANNABLES_CDN_URL = "https://scannables.scdn.co/uri/plain/svg/000000/white/400/";
+const AUDIO_FEATURES_URL = "https://api.spotify.com/v1/audio-features/";
 
 const XWWW_FORM_URL_ENCODED = "application/x-www-form-urlencoded";
 
@@ -27,6 +29,10 @@ interface DeviceCode {
 interface Token {
   access_token: string;
   refresh_token: string;
+  nowPlaying?: {
+    id: string;
+    lengths: [number, number][];
+  };
 }
 
 type TokenData = { error: string } & Token;
@@ -159,7 +165,7 @@ async function refreshToken(data: SPv2Data, token: Token, onRetryAfter: OnRetryA
   });
 
   if (!res.ok) {
-    console.warn("logou");
+    console.warn("logout");
     return makeResponse({ "led/spv2": null });
   }
 
@@ -193,40 +199,59 @@ async function requestNowPlaying(
   }
 
   if (res.status == 204) {
+    console.log("nothing is playing (204)");
     return;
   }
 
-  const { item: { id, uri } } = await res.json();
+  interface NowPlaying {
+    item: {
+      id: string;
+      uri: string;
+    };
+    is_playing: boolean;
+  }
+  const { item: { id, uri }, is_playing }: NowPlaying = await res.json();
 
-  const kScannablesCdnUrl = "https://scannables.scdn.co/uri/plain/svg/000000/white/400/";
-  const kAudioFeaturesUrl = "https://api.spotify.com/v1/audio-features/";
-  const [res1, res2] = await Promise.all([
-    fetch(kScannablesCdnUrl + uri + "?format=svg"),
-    null,
-    // fetch(kAudioFeaturesUrl + id, {
+  if (!is_playing) {
+    console.log("paused");
+    return;
+  }
+
+  const displayFromLengths = (lengths: [number, number][]) => ({
+    logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
+    bytes: makeDisplay((ctx) => {
+      ctx.fillStyle = "white";
+      lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
+    }),
+  });
+
+  if (token.nowPlaying?.id === id) {
+    console.log("same id", id);
+    return displayFromLengths(token.nowPlaying.lengths);
+  }
+
+  console.log("fetch scannable");
+  const [res1] = await Promise.all([
+    fetch(`${SCANNABLES_CDN_URL}${uri}?format=svg`),
+    // fetch(AUDIO_FEATURES_URL + id, {
     //   headers: { authorization: `Bearer ${token.access_token}` },
     // }),
   ]);
 
   const svgData = await res1.text();
   const lengths = svgData.split("\n").slice(2, 25)
-    .map((line) => {
+    .map((line): [number, number] => {
       const match = line.match(/y=\"(\d+).*height=\"(\d+)/);
       const [a, b] = match?.slice(1, 3).map((s) => parseInt(s)) ?? [];
       const LENGTHS: Record<number, number> = {
         ...{ 11: 1, 18: 2, 25: 3, 32: 4, 39: 5, 46: 6, 53: 7, 60: 8 },
         ...{ 44: 1, 41: 2, 37: 3, 34: 4, 30: 5, 27: 6, 23: 7, 20: 8 },
       };
-      return [LENGTHS[a], LENGTHS[b]] as const;
+      return [LENGTHS[a], LENGTHS[b]];
     });
 
-  return {
-    logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
-    bytes: makeDisplay((ctx) => {
-      ctx.fillStyle = "white";
-      lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
-    }),
-  };
+  token.nowPlaying = { id, lengths };
+  displayFromLengths(lengths);
 }
 
 function isLikelyToPlay() {
