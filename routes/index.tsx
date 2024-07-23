@@ -14,6 +14,7 @@ interface Data {
     tokens: [Token];
   };
   fixtures: Awaited<ReturnType<typeof listFixtures>>;
+  states: Record<string, string | undefined>;
 }
 
 export const handler: Handlers<Data> = {
@@ -28,7 +29,9 @@ export const handler: Handlers<Data> = {
 
 type FixtureResponse = NonNullable<Awaited<ReturnType<typeof listFixtures>>>["response"][0];
 
-function FootballFixture({ response }: { response: FixtureResponse }) {
+function FootballFixture(
+  { response, data }: { response: FixtureResponse; data?: string },
+) {
   const { teams: { home, away }, goals, fixture: { id } } = response;
 
   // const findTeamColor = (id: number) =>  lineup.response.find(({ team }) => team.id === id)?.team.colors.player.primary;
@@ -40,7 +43,8 @@ function FootballFixture({ response }: { response: FixtureResponse }) {
     </div>
   );
   return (
-    <form method="post" action={`/ui/api/sports/${id}`}>
+    <form method="post" action={`/led/sports/${id}`} id={`led/sports/${id}`}>
+      {data && <input type="hidden" name="data" value={data} />}
       <button class="w-full" type="submit">
         <div class="flex-1 flex gap-4 items-center">
           <img class="w-6 h-5" src={home.logo} />
@@ -61,6 +65,7 @@ export default function Home(
       hue,
       spotify: { isAuthenticating, tokens },
       fixtures,
+      states,
     },
   }: PageProps<Data>,
 ) {
@@ -87,14 +92,17 @@ export default function Home(
         {fixtures?.results
           ? [
             <h1 class="text-center text-xl mb-2">UEFA</h1>,
-            Object.entries(Object.groupBy(fixtures.response, ({ date }) => date)).map(
-              ([date, res]) => [
+            Object.entries(
+              Object.groupBy(fixtures.response, (res) => res.fixture.date.slice(0, 10)),
+            )
+              .map(([date, res]) => [
                 <div class="text-center bg-gray-200 rounded-full">
                   {moment.default(date).calendar()}
                 </div>,
-                res?.map((res) => <FootballFixture response={res} />),
-              ],
-            ),
+                res?.map((res) => (
+                  <FootballFixture response={res} data={states[`led/sports/${res.fixture.id}`]} />
+                )),
+              ]),
           ]
           : <>No sport games playing</>}
 

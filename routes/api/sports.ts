@@ -44,20 +44,13 @@ export async function listFixtures() {
     console.log(fixtures);
   }
 
-  return {
-    ...fixtures,
-    response: fixtures.response.map((res) => {
-      const time = new Date(res.fixture.date).getTime();
-      const date = new Date(time - (time % 86400000)).toISOString().substring(0, 10);
-      return ({ date, ...res });
-    }),
-  };
+  return fixtures;
 }
 
-export async function getFixtureAndLineup(id: string) {
+export async function getFixtureAndLineup(id: string, refresh = false) {
   const [[fixtureRes], [lineupRes]] = await Promise.all([
-    fetchWithCache(new Request(`${API}/fixtures?id=${id}`, REQ_INIT), true),
-    fetchWithCache(new Request(`${API}/fixtures/lineups?fixture=${id}`, REQ_INIT), true),
+    fetchWithCache(new Request(`${API}/fixtures?id=${id}`, REQ_INIT), refresh),
+    fetchWithCache(new Request(`${API}/fixtures/lineups?fixture=${id}`, REQ_INIT), refresh),
   ]);
 
   if (!fixtureRes.ok || !lineupRes.ok) {
