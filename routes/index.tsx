@@ -3,8 +3,10 @@ import { useSignal } from "@preact/signals";
 import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 import SpotifyAuthToggle from "../islands/SpotifyAuthToggle.tsx";
 import SpotifyTokens, { Token } from "../islands/SpotifyTokens.tsx";
-import { listFixtures } from "./api/sports.ts";
-import * as moment from "npm:moment";
+import { listFixtures } from "../src/sports.ts";
+
+type Fixtures = NonNullable<Awaited<ReturnType<typeof listFixtures>>>;
+type FixtureResponse = Fixtures["response"][0];
 
 interface Data {
   brightness: string;
@@ -13,7 +15,7 @@ interface Data {
     isAuthenticating: boolean;
     tokens: [Token];
   };
-  fixtures: Awaited<ReturnType<typeof listFixtures>>;
+  fixtures?: Fixtures;
   states: Record<string, string | undefined>;
 }
 
@@ -27,14 +29,10 @@ export const handler: Handlers<Data> = {
   },
 };
 
-type FixtureResponse = NonNullable<Awaited<ReturnType<typeof listFixtures>>>["response"][0];
-
 function FootballFixture(
   { response, data }: { response: FixtureResponse; data?: string },
 ) {
   const { teams: { home, away }, goals, fixture: { id } } = response;
-
-  // const findTeamColor = (id: number) =>  lineup.response.find(({ team }) => team.id === id)?.team.colors.player.primary;
 
   const teamLabel = (name: string, goals: number | null) => (
     <div class="flex-1 text-center">
@@ -42,8 +40,14 @@ function FootballFixture(
       <div class="text-lg font-bold">{goals}</div>
     </div>
   );
+
   return (
-    <form method="post" action={`/led/sports/${id}`} id={`led/sports/${id}`}>
+    <form
+      id={`/led/sports/${id}`}
+      method="post"
+      action={`/led/sports/${id}${data ? "?abort" : ""}`}
+      className={data ? "bg-red-100" : ""}
+    >
       {data && <input type="hidden" name="data" value={data} />}
       <button class="w-full" type="submit">
         <div class="flex-1 flex gap-4 items-center">
@@ -69,6 +73,15 @@ export default function Home(
     },
   }: PageProps<Data>,
 ) {
+  const leagueById = fixtures
+    ? Object.fromEntries(fixtures.response.map(({ league }) => [league.id, league]))
+    : {};
+
+  const leagueFixtures = fixtures
+    ? Object.entries(Object.groupBy(fixtures.response, (res) => res.league.id))
+      .map(([leagueId, res]) => [leagueById[leagueId], res] as const)
+    : null;
+
   return (
     <div class="p-4 mx-auto">
       <div class="flex(& col) gap-4">
@@ -89,36 +102,32 @@ export default function Home(
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
         </form>
 
-        {fixtures?.results
+        {leagueFixtures
           ? [
-            <h1 class="text-center text-xl mb-2">UEFA</h1>,
-            Object.entries(
-              Object.groupBy(fixtures.response, (res) => res.fixture.date.slice(0, 10)),
-            )
-              .map(([date, res]) => [
+            <h1 class="text-center text-xl mb-2">Sportboll</h1>,
+            leagueFixtures
+              .slice(0, 3)
+              .map(([{ name, country }, res]) => [
                 <div class="text-center bg-gray-200 rounded-full">
-                  {moment.default(date).calendar()}
+                  {name} {country !== "World" ? country : null}
                 </div>,
-                res?.map((res) => (
-                  <FootballFixture response={res} data={states[`led/sports/${res.fixture.id}`]} />
+                res?.slice(0, 5).map((res) => (
+                  <FootballFixture response={res} data={states[`/led/sports/${res.fixture.id}`]} />
                 )),
               ]),
+            leagueFixtures.length > 5
+              ? (
+                <button className="self-center px-8 py-2 bg-gray-300 rounded-full">
+                  Show {leagueFixtures.length - 5} leagues...
+                </button>
+              )
+              : null,
           ]
           : <>No sport games playing</>}
 
         <form method="post" action={`/led/spv2`}>
           <button class="w-full" type="submit">SPv2</button>
         </form>
-
-        {
-          /* <form class="self-stretch flex items-center gap-2" method="post" action="/ui/api/sports">
-          <input class="" type="radio" name="mode" value="true" />
-          <label for="html">ON</label>
-          <input class="" type="radio" name="mode" value="false" />
-          <label for="html">OFF</label>
-          <input class="px-4 py-2 rounded-full" type="submit" value="Poopy" />
-        </form> */
-        }
       </div>
     </div>
   );

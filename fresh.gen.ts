@@ -5,8 +5,6 @@
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $api_joke from "./routes/api/joke.ts";
-import * as $api_sports from "./routes/api/sports.ts";
-import * as $api_sports_fixture_ from "./routes/api/sports/[fixture].ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $led_sports_id_ from "./routes/led/sports/[id].ts";
@@ -22,8 +20,6 @@ const manifest = {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
     "./routes/api/joke.ts": $api_joke,
-    "./routes/api/sports.ts": $api_sports,
-    "./routes/api/sports/[fixture].ts": $api_sports_fixture_,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/led/sports/[id].ts": $led_sports_id_,

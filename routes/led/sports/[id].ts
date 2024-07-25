@@ -3,11 +3,11 @@ import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { makeDisplay } from "../../../src/rendering.ts";
 import { encodeState, makeResponse } from "../../../src/state.ts";
-import { getFixtureAndLineup } from "../../api/sports.ts";
+import { getFixtureAndLineup } from "../../../src/sports.ts";
 import { decodeServiceRequest } from "../../../src/state.ts";
 
 interface Data {
-  visible?: boolean;
+  autoHide?: boolean;
 }
 
 function toHex([r, g, b]: Uint8Array) {
@@ -17,16 +17,15 @@ function toHex([r, g, b]: Uint8Array) {
 export const handler: Handlers = {
   async POST(req, routeCtx) {
     const url = new URL(req.url);
-    const id = url.pathname.slice(1);
-    const { data: { visible } } = await decodeServiceRequest<Data>(req, {});
+    const id = url.pathname;
+    const { data: { autoHide } } = await decodeServiceRequest<Data>(req, {});
 
-    // Toggle visibility
-    if (visible) {
+    if (autoHide || url.searchParams.has("abort")) {
       console.log(`Hide ${id}`);
       return makeResponse({ [id]: null });
     }
 
-    const fixtureAndLineup = await getFixtureAndLineup(routeCtx.params.id, false);
+    const fixtureAndLineup = await getFixtureAndLineup(routeCtx.params.id);
 
     if (!fixtureAndLineup || fixtureAndLineup.fixture.results == 0) {
       for (const error of Object.values(fixtureAndLineup?.fixture.errors ?? {})) {
@@ -44,10 +43,15 @@ export const handler: Handlers = {
     const date = new Date(fixture.date).getTime();
 
     // Game not yet started
-    if (date >= now || goals.home == null || goals.away == null) {
+    if (date >= now) {
       const poll = Math.max(0, Math.min(date - now, 60 * 60 * 1000)); // check back in 1h
-      console.log(`${status.long} ${fixture.date} (wait ${poll / (60 * 1000)} minutes)`);
-      return makeResponse({ [id]: encodeState(undefined, undefined, { poll }) });
+      console.log(`${id}: ${status.long} ${fixture.date} (wait ${poll / (60 * 1000)} minutes)`);
+      return makeResponse({ [id]: encodeState<Data>({}, undefined, { poll }) });
+    }
+
+    // Game was not played..?
+    if (goals.home == null || goals.away == null) {
+      return makeResponse({ [id]: null });
     }
 
     const teamColors = new Map(
@@ -72,10 +76,12 @@ export const handler: Handlers = {
       "P": 30 * 1000,
     })[status.short];
 
-    console.log(`${status.long} ${home.name} - ${away.name} (${goals.home} - ${goals.away})`);
+    console.log(
+      `${id}: ${status.long} ${home.name} - ${away.name} (${goals.home} - ${goals.away})`,
+    );
     return makeResponse({
       [id]: encodeState<Data>(
-        { visible: true },
+        { autoHide: true },
         {
           logo: encode(logoColor),
           bytes: makeDisplay((ctx) => {
