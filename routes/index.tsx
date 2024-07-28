@@ -4,6 +4,7 @@ import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 import SpotifyAuthToggle from "../islands/SpotifyAuthToggle.tsx";
 import SpotifyTokens, { Token } from "../islands/SpotifyTokens.tsx";
 import { listFixtures } from "../src/sports.ts";
+import moment from "npm:moment";
 
 type Fixtures = NonNullable<Awaited<ReturnType<typeof listFixtures>>>;
 type FixtureResponse = Fixtures["response"][0];
@@ -29,33 +30,48 @@ export const handler: Handlers<Data> = {
   },
 };
 
-function FootballFixture(
-  { response, data }: { response: FixtureResponse; data?: string },
-) {
-  const { teams: { home, away }, goals, fixture: { id } } = response;
-
-  const teamLabel = (name: string, goals: number | null) => (
-    <div class="flex-1 text-center">
-      <div>{name}</div>
-      <div class="text-lg font-bold">{goals}</div>
-    </div>
-  );
+// todo: make an island
+function FootballFixture({ response, enabled }: { response: FixtureResponse; enabled: boolean }) {
+  const { teams: { home, away }, goals, fixture: { id: fixtureId, date, status } } = response;
+  const id = `/led/sports/${fixtureId}`;
 
   return (
-    <form
-      id={`/led/sports/${id}`}
-      method="post"
-      action={`/led/sports/${id}${data ? "?abort" : ""}`}
-      className={data ? "bg-red-100" : ""}
-    >
-      {data && <input type="hidden" name="data" value={data} />}
-      <button class="w-full" type="submit">
-        <div class="flex-1 flex gap-4 items-center">
-          <img class="w-6 h-5" src={home.logo} />
-          {teamLabel(home.name, goals.home)}
-          <span>vs</span>
-          {teamLabel(away.name, goals.away)}
-          <img class="w-6 h-5" src={away.logo} />
+    <form method="post" action={`${id}?toggle`}>
+      <button
+        className={`w-full hover:bg-gray-100 p-2 flex gap-2 items-stretch h-28 ${
+          enabled ? "bg-red-400" : ""
+        }`}
+        type="submit"
+      >
+        <div class={`flex-1 flex flex-col`}>
+          <div class="flex-1 flex items-center">
+            <img class="w-6 h-5 m-2" src={home.logo} />
+            <div class="flex-1 text-left">{home.name}</div>
+            <div>{goals.home}</div>
+          </div>
+          <div class="flex-1 flex items-center">
+            <img class="w-6 h-5 m-2" src={away.logo} />
+            <div class="flex-1 text-left">{away.name}</div>
+            <div>{goals.away}</div>
+          </div>
+        </div>
+
+        {goals.home != null && goals.away != null && (
+          <div class={`flex flex-col`}>
+            <div class="flex-1 flex items-center">
+              {(goals.home ?? 0) > (goals.away ?? 0) ? <div>◀︎</div> : null}
+            </div>
+            <div class="flex-1 flex items-center">
+              {(goals.home ?? 0) < (goals.away ?? 0) ? <div>◀︎</div> : null}
+            </div>
+          </div>
+        )}
+
+        <div class="w-[1px] self-center h-5/6 bg-gray-300"></div>
+
+        <div class="w-22 self-center text-sm text-center">
+          <div>{status.short}</div>
+          <div>{moment(date).fromNow()}</div>
         </div>
       </button>
     </form>
@@ -102,28 +118,33 @@ export default function Home(
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
         </form>
 
-        {leagueFixtures
-          ? [
-            <h1 class="text-center text-xl mb-2">Sportboll</h1>,
-            leagueFixtures
-              .slice(0, 3)
-              .map(([{ name, country }, res]) => [
-                <div class="text-center bg-gray-200 rounded-full">
-                  {name} {country !== "World" ? country : null}
-                </div>,
-                res?.slice(0, 5).map((res) => (
-                  <FootballFixture response={res} data={states[`/led/sports/${res.fixture.id}`]} />
-                )),
-              ]),
-            leagueFixtures.length > 5
-              ? (
-                <button className="self-center px-8 py-2 bg-gray-300 rounded-full">
-                  Show {leagueFixtures.length - 5} leagues...
-                </button>
-              )
-              : null,
-          ]
-          : <>No sport games playing</>}
+        <div>
+          {leagueFixtures
+            ? [
+              <h1 class="text-center text-xl mb-2">Sportboll</h1>,
+              leagueFixtures
+                .slice(0, 3)
+                .map(([{ name, country }, res]) => [
+                  <div class="text-center bg-gray-200 rounded-full">
+                    {name} {country !== "World" ? country : null}
+                  </div>,
+                  res?.slice(0, 5).map((res) => (
+                    <FootballFixture
+                      response={res}
+                      enabled={`/led/sports/${res.fixture.id}` in states}
+                    />
+                  )),
+                ]),
+            ]
+            : <>No sport games playing</>}
+        </div>
+        {leagueFixtures && leagueFixtures.length > 5
+          ? (
+            <button className="self-center px-8 py-2 bg-gray-300 rounded-full">
+              Show {leagueFixtures.length - 5} leagues...
+            </button>
+          )
+          : null}
 
         <form method="post" action={`/led/spv2`}>
           <button class="w-full" type="submit">SPv2</button>

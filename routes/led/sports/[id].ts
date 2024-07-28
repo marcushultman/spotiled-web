@@ -5,9 +5,10 @@ import { makeDisplay } from "../../../src/rendering.ts";
 import { encodeState, makeResponse } from "../../../src/state.ts";
 import { getFixtureAndLineup } from "../../../src/sports.ts";
 import { decodeServiceRequest } from "../../../src/state.ts";
+import moment from "npm:moment";
 
 interface Data {
-  autoHide?: boolean;
+  enabled: boolean;
 }
 
 function toHex([r, g, b]: Uint8Array) {
@@ -18,10 +19,10 @@ export const handler: Handlers = {
   async POST(req, routeCtx) {
     const url = new URL(req.url);
     const id = url.pathname;
-    const { data: { autoHide } } = await decodeServiceRequest<Data>(req, {});
+    const { data: { enabled } } = await decodeServiceRequest<Data>(req, { enabled: false });
 
-    if (autoHide || url.searchParams.has("abort")) {
-      console.log(`Hide ${id}`);
+    if (enabled && url.searchParams.has("toggle")) {
+      console.log(`${id}: hiding`);
       return makeResponse({ [id]: null });
     }
 
@@ -38,28 +39,31 @@ export const handler: Handlers = {
       fixture: { response: [{ fixture: { status, ...fixture }, teams: { home, away }, goals }] },
       lineup,
     } = fixtureAndLineup;
+    const printLead = `${id}: ${status.long} ${home.name} vs ${away.name}`;
 
     const now = Date.now();
     const date = new Date(fixture.date).getTime();
 
     // Game not yet started
     if (date >= now) {
-      const poll = Math.max(0, Math.min(date - now, 60 * 60 * 1000)); // check back in 1h
-      console.log(`${id}: ${status.long} ${fixture.date} (wait ${poll / (60 * 1000)} minutes)`);
-      return makeResponse({ [id]: encodeState<Data>({}, undefined, { poll }) });
+      const startsIn = date - now;
+      console.log(`${printLead}: starts ${moment(date).from(now)}`);
+      const poll = Math.min(startsIn, 60 * 60 * 1000); // check back in <= 1h
+      return makeResponse({ [id]: encodeState<Data>({ enabled: true }, undefined, { poll }) });
     }
 
     // Game was not played..?
     if (goals.home == null || goals.away == null) {
+      console.log(`${printLead}: game not played => hiding`);
       return makeResponse({ [id]: null });
     }
 
     const teamColors = new Map(
-      lineup.response
-        .map(({ team: { id, colors: { player: { primary: hexColor } } } }) => {
-          const [r, g, b] = (hexColor.match(/.{2}/g) ?? []).map((hex) => parseInt(hex, 16));
-          return [id, new Uint8Array([r, g, b])] as const;
-        }),
+      lineup.response.map(({ team: { id, colors } }) => {
+        const { player: { primary: hexColor = "ffffff" } = {} } = colors ?? {};
+        const [r, g, b] = (hexColor.match(/.{2}/g) ?? []).map((hex) => parseInt(hex, 16));
+        return [id, new Uint8Array([r, g, b])] as const;
+      }),
     );
 
     const [homeColor, awayColor] = [teamColors.get(home.id), teamColors.get(away.id)];
@@ -76,12 +80,15 @@ export const handler: Handlers = {
       "P": 30 * 1000,
     })[status.short];
 
-    console.log(
-      `${id}: ${status.long} ${home.name} - ${away.name} (${goals.home} - ${goals.away})`,
-    );
+    if (!poll && enabled) {
+      console.log(`${printLead}: timeout => hiding`);
+      return makeResponse({ [id]: null });
+    }
+
+    console.log(`${printLead}: ${goals.home} - ${goals.away}`);
     return makeResponse({
       [id]: encodeState<Data>(
-        { autoHide: true },
+        { enabled: true },
         {
           logo: encode(logoColor),
           bytes: makeDisplay((ctx) => {

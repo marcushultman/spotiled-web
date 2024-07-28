@@ -1,7 +1,5 @@
 // Request
 
-import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
-
 export interface ServiceRequest<T> {
   data: T;
 }
@@ -31,17 +29,8 @@ export interface ServiceResponse {
 
 export async function decodeServiceRequest<T>(req: Request, def: T): Promise<ServiceRequest<T>> {
   try {
-    const contentType = req.headers.get("content-type");
-    if (contentType === "application/json") {
-      const { data } = await req.json();
-      return { data: JSON.parse(atob(data)) };
-    } else if (contentType === "application/x-www-form-urlencoded") {
-      const formData = await req.formData();
-      const data = formData.get("data");
-      assert(typeof data === "string");
-      return { data: JSON.parse(atob(data)) };
-    }
-    throw {};
+    const { data } = await req.json();
+    return { data: JSON.parse(atob(data)) };
   } catch (_) {
     return { data: def };
   }
