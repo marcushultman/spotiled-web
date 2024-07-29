@@ -7,6 +7,7 @@ import * as $_app from "./routes/_app.tsx";
 import * as $api_joke from "./routes/api/joke.ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
+import * as $led_flag from "./routes/led/flag.ts";
 import * as $led_sports_id_ from "./routes/led/sports/[id].ts";
 import * as $led_spv2 from "./routes/led/spv2.ts";
 import * as $BrightnessSlider from "./islands/BrightnessSlider.tsx";
@@ -22,6 +23,7 @@ const manifest = {
     "./routes/api/joke.ts": $api_joke,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
+    "./routes/led/flag.ts": $led_flag,
     "./routes/led/sports/[id].ts": $led_sports_id_,
     "./routes/led/spv2.ts": $led_spv2,
   },

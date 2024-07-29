@@ -118,6 +118,10 @@ export default function Home(
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
         </form>
 
+        <form method="post" action={`/led/flag`}>
+          <button class="w-full" type="submit">Flag</button>
+        </form>
+
         <div>
           {leagueFixtures
             ? [
