@@ -10,9 +10,15 @@ export interface Behavior {
   poll?: number;
 }
 
+export enum Prio {
+  APP = 0,
+  NOTIFICATION = 1,
+}
+
 export interface Display {
   logo: string; // [number, number, number];
   bytes: string;
+  prio?: Prio;
 }
 
 export interface State {
