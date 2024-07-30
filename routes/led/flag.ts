@@ -1,7 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { encode } from "https://deno.land/std@0.106.0/encoding/base64.ts";
 import { makeDisplay } from "../../src/rendering.ts";
-import { decodeServiceRequest, encodeState } from "../../src/state.ts";
+import { decodeServiceRequest, encodeState, Prio } from "../../src/state.ts";
 
 interface Data {
   enabled: boolean;
@@ -38,7 +38,9 @@ export const handler: Handlers = {
     }
 
     return Response.json({
-      "/led/flag": encodeState({ enabled: true }, { logo: LOGO, bytes }, { poll: 3000 }),
+      "/led/flag": encodeState({ enabled: true }, { logo: LOGO, bytes, prio: Prio.NOTIFICATION }, {
+        poll: 3000,
+      }),
     });
   },
 };
