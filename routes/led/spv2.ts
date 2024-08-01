@@ -154,7 +154,6 @@ async function authenticate(data: SPv2Data) {
     console.error(e instanceof Error ? e.message : `Unknown error: ${e}`);
     return makeSpv2Response({ ...data, auth: {} }, undefined, { poll: 5000 });
   }
-  delete data.auth;
 }
 
 type OnRetryAfter = (retryAfter: number) => void;
@@ -280,14 +279,16 @@ function requestBackoff(numRequest: number) {
 export const handler: Handlers = {
   async POST(req, _) {
     const url = new URL(req.url);
+    const toggleAuth = url.searchParams.has("auth");
     const { data } = await decodeServiceRequest<SPv2Data>(req, {});
 
-    if (data.auth || url.searchParams.has("auth")) {
+    if (toggleAuth ? !data.auth : data.auth) {
       const res = await authenticate(data);
       if (res) {
         return res;
       }
     }
+    delete data.auth;
 
     if (data.lastRequestAt && Date.now() >= data.lastRequestAt + 36001000) {
       data.numRequests = 0;
