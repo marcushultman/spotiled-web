@@ -150,7 +150,7 @@ export default function Home(
           )
           : null}
 
-        <form method="post" action={`/led/spv2`}>
+        <form method="post" action={`/led/spv2?auth`}>
           <button class="w-full" type="submit">SPv2</button>
         </form>
       </div>

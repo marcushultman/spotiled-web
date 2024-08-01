@@ -1,7 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
-import { makeDisplay } from "../../src/rendering.ts";
+import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts";
 import { decodeServiceRequest, Display, encodeState, makeResponse } from "../../src/state.ts";
 import { Behavior } from "../../src/state.ts";
 
@@ -45,7 +45,11 @@ interface SPv2Data {
 }
 
 function makeSpv2Response(data?: SPv2Data, display?: Display, behavior?: Behavior) {
-  return makeResponse({ "led/spv2": encodeState(data, display, behavior) });
+  return makeResponse({
+    "/led/spv2": encodeState(data, display, behavior),
+    // todo: remove temporary workaround
+    "led/spv2": null,
+  });
 }
 
 //
@@ -114,6 +118,8 @@ async function pollToken(deviceCode: DeviceCode): Promise<Token> {
   return { access_token, refresh_token };
 }
 
+const AUTHENTICATE_CANVAS = createCanvas(48, 16);
+
 async function authenticate(data: SPv2Data) {
   try {
     let { deviceCode } = data.auth ?? {};
@@ -126,19 +132,25 @@ async function authenticate(data: SPv2Data) {
   } catch (e: unknown) {
     if (e instanceof AuthorizationPendingError) {
       console.log("authorization_pending");
+
+      const { width, height } = AUTHENTICATE_CANVAS;
+      const ctx = AUTHENTICATE_CANVAS.getContext("2d");
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.scale(0.66, 1);
+      ctx.fillStyle = "white";
+      ctx.font = "16px monospace";
+      ctx.fillText(e.deviceCode.user_code, 3 / 0.66, 14);
+
       return makeSpv2Response(
         data,
         {
           logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
-          bytes: makeDisplay((ctx) => {
-            ctx.fillStyle = "red";
-            ctx.fillRect(0, 0, 1, 1);
-
-            ctx.scale(0.5, 1);
-            ctx.fillStyle = "white";
-            ctx.font = "16px monospace";
-            ctx.fillText(e.deviceCode.user_code, 3 / 0.5, 14);
-          }),
+          bytes: encodeCanvas(AUTHENTICATE_CANVAS),
+          width,
+          height,
+          xscroll: 5,
         },
         { poll: e.deviceCode.interval * 1000 },
       );

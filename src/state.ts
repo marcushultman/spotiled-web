@@ -19,6 +19,10 @@ export interface Display {
   logo: string; // [number, number, number];
   bytes: string;
   prio?: Prio;
+
+  width?: number;
+  height?: number;
+  xscroll?: number;
 }
 
 export interface State {
