@@ -45,11 +45,7 @@ interface SPv2Data {
 }
 
 function makeSpv2Response(data?: SPv2Data, display?: Display, behavior?: Behavior) {
-  return makeResponse({
-    "/led/spv2": encodeState(data, display, behavior),
-    // todo: remove temporary workaround
-    "led/spv2": null,
-  });
+  return makeResponse({ "/led/spv2": encodeState(data, display, behavior) });
 }
 
 //
