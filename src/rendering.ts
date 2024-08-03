@@ -10,8 +10,8 @@ function _createCanvas(width: number, height: number) {
   return createCanvas(width, height);
 }
 
-function _encodeCanvas(canvas: EmulatedCanvas2D) {
-  return encode(transpose(canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height)));
+function _encodeCanvas(canvas: EmulatedCanvas2D, width = canvas.width) {
+  return encode(transpose(canvas.getContext("2d").getImageData(0, 0, width, canvas.height)));
 }
 
 export { _createCanvas as createCanvas, _encodeCanvas as encodeCanvas };

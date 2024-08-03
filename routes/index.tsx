@@ -112,7 +112,7 @@ export default function Home(
         <form
           class="self-stretch flex gap-2"
           method="post"
-          action={"/text"}
+          action={"/led/text"}
         >
           <input class="flex-1 border-1" name="text" placeholder="" />
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
