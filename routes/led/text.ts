@@ -14,6 +14,7 @@ let canvas = createCanvas(23, 16);
 
 const CHAR_WIDTH = (() => {
   const ctx = canvas.getContext("2d");
+  ctx.scale(2 / 3, 1);
   ctx.font = "14px monospace";
   return ctx.measureText(" ").width;
 })();
@@ -32,14 +33,13 @@ export const handler: Handlers = {
     }
 
     const ctx = canvas.getContext("2d");
+    ctx.resetTransform();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(2 / 3, 1);
 
     ctx.fillStyle = "white";
     ctx.font = "14px monospace";
     ctx.fillText(text, 0, 13);
-
-    ctx.fillStyle = "red";
-    ctx.fillRect(width - 1, 0, 1, 1);
 
     return makeResponse({
       "/led/text": encodeState(
