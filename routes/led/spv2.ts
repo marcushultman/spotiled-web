@@ -4,6 +4,7 @@ import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
 import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts";
 import { decodeServiceRequest, Display, encodeState, makeResponse } from "../../src/state.ts";
 import { Behavior } from "../../src/state.ts";
+import { DeviceCode, SPv2Data, Token } from "../../src/spv2.ts";
 
 const CLIENT_ID = Deno.env.get("SPOTIFY_CLIENT_ID");
 const CLIENT_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET");
@@ -19,30 +20,7 @@ const AUDIO_FEATURES_URL = "https://api.spotify.com/v1/audio-features/";
 
 const XWWW_FORM_URL_ENCODED = "application/x-www-form-urlencoded";
 
-interface DeviceCode {
-  expiry: number;
-  interval: number;
-  device_code: string;
-  user_code: string;
-}
-
-interface Token {
-  access_token: string;
-  refresh_token: string;
-  nowPlaying?: {
-    id: string;
-    lengths: [number, number][];
-  };
-}
-
 type TokenData = { error: string } & Token;
-
-interface SPv2Data {
-  auth?: { deviceCode?: DeviceCode };
-  tokens?: Token[];
-  numRequests?: number;
-  lastRequestAt?: number;
-}
 
 function makeSpv2Response(data?: SPv2Data, display?: Display, behavior?: Behavior) {
   return makeResponse({ "/led/spv2": encodeState(data, display, behavior) });
