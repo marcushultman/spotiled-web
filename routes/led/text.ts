@@ -14,7 +14,7 @@ let canvas = createCanvas(23, 16);
 
 const CHAR_WIDTH = (() => {
   const ctx = canvas.getContext("2d");
-  ctx.scale(2 / 3, 1);
+  ctx.scale(0.8, 1);
   ctx.font = "14px monospace";
   return ctx.measureText(" ").width;
 })();
@@ -26,7 +26,8 @@ export const handler: Handlers = {
       (await decodeServiceRequest<Data>(req, { text: "" })).data.text;
 
     const width = CHAR_WIDTH * (text.length + 1);
-    const poll = width * 1000 / 5;
+    const xscroll = 10;
+    const poll = width * 1000 / xscroll;
 
     if (width > canvas.width) {
       canvas = createCanvas(width, 16);
@@ -35,7 +36,7 @@ export const handler: Handlers = {
     const ctx = canvas.getContext("2d");
     ctx.resetTransform();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(2 / 3, 1);
+    ctx.scale(0.8, 1);
 
     ctx.fillStyle = "white";
     ctx.font = "14px monospace";
@@ -48,7 +49,7 @@ export const handler: Handlers = {
           logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
           bytes: encodeCanvas(canvas, width),
           width,
-          xscroll: 5,
+          xscroll,
           prio: Prio.NOTIFICATION,
         },
       ),
