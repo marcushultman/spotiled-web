@@ -4,7 +4,6 @@ import { useEffect } from "preact/hooks";
 export interface Token {
   accessToken: string;
   isPlaying: boolean;
-  uri?: string;
 }
 
 export interface SpotifyTokensProps {
