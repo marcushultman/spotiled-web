@@ -12,6 +12,7 @@ import * as $led_sports_id_ from "./routes/led/sports/[id].ts";
 import * as $led_spv2 from "./routes/led/spv2.ts";
 import * as $led_text from "./routes/led/text.ts";
 import * as $ping from "./routes/ping.ts";
+import * as $sports_index from "./routes/sports/index.tsx";
 import * as $timeout_path_ from "./routes/timeout/[...path].ts";
 import * as $BrightnessSlider from "./islands/BrightnessSlider.tsx";
 import * as $Counter from "./islands/Counter.tsx";
@@ -31,6 +32,7 @@ const manifest = {
     "./routes/led/spv2.ts": $led_spv2,
     "./routes/led/text.ts": $led_text,
     "./routes/ping.ts": $ping,
+    "./routes/sports/index.tsx": $sports_index,
     "./routes/timeout/[...path].ts": $timeout_path_,
   },
   islands: {
