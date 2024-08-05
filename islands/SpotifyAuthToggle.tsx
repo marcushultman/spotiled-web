@@ -1,6 +1,6 @@
 import type { Signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
-import { Button } from "../components/Button.tsx";
+import { parseData } from "../src/spv2.ts";
 
 interface SpotifyAuthToggleProps {
   isAuthenticating: Signal<boolean>;
@@ -19,30 +19,24 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
     schedulePoll();
   };
   const poll = async () => {
-    const res = await fetch("spotify/auth");
-    props.isAuthenticating.value = (res.ok ? await res.json() : {}).isAuthenticating ?? false;
+    const res = await fetch("/led/spv2");
+    const { auth } = parseData(await res.text());
+    props.isAuthenticating.value = auth !== undefined;
     schedulePoll();
   };
   useEffect(schedulePoll, []);
 
   return (
-    <form
-      class="flex items-center justify-center gap-2"
-      method="POST"
-      action={"/spotify/auth"}
-      onSubmit={toggle}
-    >
-      <img
-        className="w-8 h-8"
-        src={props.isAuthenticating.value
-          ? "https://upload.wikimedia.org/wikipedia/commons/d/de/Ajax-loader.gif"
-          : "https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg"}
-      />
-      <input
-        class="px-4 py-2 bg-white text-green-600"
-        type="submit"
-        value={props.isAuthenticating.value ? "Cancel" : "Login"}
-      />
+    <form class="flex justify-center" method="POST" action={"/led/spv2?auth"} onSubmit={toggle}>
+      <button type="submit" class="flex items-center gap-2 text-green-600">
+        <img
+          className="w-8 h-8"
+          src={props.isAuthenticating.value
+            ? "https://upload.wikimedia.org/wikipedia/commons/d/de/Ajax-loader.gif"
+            : "https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg"}
+        />
+        {props.isAuthenticating.value ? "Cancel" : "Login"}
+      </button>
     </form>
   );
 }

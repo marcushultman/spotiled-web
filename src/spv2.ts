@@ -11,6 +11,7 @@ export interface Token {
   nowPlaying?: {
     id: string;
     lengths: [number, number][];
+    isPlaying: boolean;
   };
 }
 

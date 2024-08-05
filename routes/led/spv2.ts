@@ -196,6 +196,9 @@ async function requestNowPlaying(
 
   if (!is_playing) {
     console.log("paused");
+    if (token.nowPlaying) {
+      token.nowPlaying.isPlaying = false;
+    }
     return;
   }
 
@@ -211,6 +214,7 @@ async function requestNowPlaying(
   };
 
   if (token.nowPlaying?.id === id) {
+    token.nowPlaying.isPlaying = true;
     return displayFromLengths(token.nowPlaying.lengths);
   }
 
@@ -234,7 +238,7 @@ async function requestNowPlaying(
       return [LENGTHS[a], LENGTHS[b]];
     });
 
-  token.nowPlaying = { id, lengths };
+  token.nowPlaying = { id, lengths, isPlaying: true };
   return displayFromLengths(lengths);
 }
 
@@ -283,7 +287,7 @@ export const handler: Handlers = {
       );
       if (result instanceof DidLogoutError) {
         console.warn(token.access_token.slice(0, 8), "logged out");
-        data.tokens.splice(i, 1);
+        data.tokens.splice(i--, 1);
       } else if (result) {
         // Re-order tokens
         data.tokens.unshift(...data.tokens.splice(i, 1));

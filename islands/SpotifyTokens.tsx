@@ -1,23 +1,15 @@
 import { Signal, useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
-
-export interface Token {
-  accessToken: string;
-  isPlaying: boolean;
-}
+import { Token } from "../src/spv2.ts";
 
 export interface SpotifyTokensProps {
   tokens: Signal<Token[]>;
 }
 
-interface Response {
-  tokens: Token[];
-}
-
 interface Profile {
   displayName: string;
-  isPlaying: boolean;
   image?: string;
+  isPlaying: boolean;
 }
 
 export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
@@ -25,22 +17,16 @@ export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
 
   const lookupProfiles = (tokens: Token[]) =>
     Promise.all(
-      tokens.map(async ({ accessToken, ...props }): Promise<Profile> => {
+      tokens.map(async ({ access_token, nowPlaying }): Promise<Profile> => {
         const res = await fetch("https://api.spotify.com/v1/me", {
           method: "GET",
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${access_token}` },
         });
         const { display_name: displayName = "", images: [{ url: image = undefined } = {}] } =
           await res.json();
-        return { displayName, image, ...props };
+        return { displayName, image, isPlaying: !!nowPlaying?.isPlaying };
       }),
     );
-
-  const update = () =>
-    fetch("/spotify/tokens").then(async (res) => {
-      const { tokens }: Response = await res.json();
-      profiles.value = await lookupProfiles(tokens);
-    });
 
   useEffect(() => {
     lookupProfiles(tokens.value).then((p) => profiles.value = p);

@@ -2,15 +2,12 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import { useSignal } from "@preact/signals";
 import BrightnessSlider from "../islands/BrightnessSlider.tsx";
 import SpotifyAuthToggle from "../islands/SpotifyAuthToggle.tsx";
-import SpotifyTokens, { Token } from "../islands/SpotifyTokens.tsx";
+import SpotifyTokens from "../islands/SpotifyTokens.tsx";
+import { parseData } from "../src/spv2.ts";
 
 interface Data {
   brightness: string;
   hue: string;
-  spotify: {
-    isAuthenticating: boolean;
-    tokens: [Token];
-  };
   states: Record<string, string | undefined>;
 }
 
@@ -29,10 +26,11 @@ export default function Home(
     data: {
       brightness,
       hue,
-      spotify: { isAuthenticating, tokens },
+      states,
     },
   }: PageProps<Data>,
 ) {
+  const { auth, tokens = [] } = parseData(states["/led/spv2"]);
   return (
     <div class="p-4 mx-auto">
       <div class="flex(& col) gap-4">
@@ -41,7 +39,7 @@ export default function Home(
           <BrightnessSlider {...{ brightness, hue }} />
         </div>
 
-        <SpotifyAuthToggle isAuthenticating={useSignal(isAuthenticating)} />
+        <SpotifyAuthToggle isAuthenticating={useSignal(auth !== undefined)} />
         <SpotifyTokens tokens={useSignal(tokens)} />
 
         <form class="self-stretch flex gap-2" method="post" action={"/led/text"}>
@@ -54,10 +52,6 @@ export default function Home(
         </form>
 
         <a href="/sports">Sportboll</a>
-
-        <form method="post" action={`/led/spv2?auth`}>
-          <button class="w-full" type="submit">SPv2</button>
-        </form>
       </div>
     </div>
   );
