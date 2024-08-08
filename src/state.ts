@@ -39,7 +39,7 @@ export interface ServiceResponse {
 
 export async function decodeServiceRequest<T>(req: Request, def: T): Promise<ServiceRequest<T>> {
   try {
-    const { data } = await req.json();
+    const data = await req.text();
     return { data: JSON.parse(atob(data)) };
   } catch (_) {
     return { data: def };
