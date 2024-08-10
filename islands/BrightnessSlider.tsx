@@ -31,14 +31,14 @@ export default function BrightnessSlider({ brightness, hue }: Props) {
         min={range[0]}
         max={range[1]}
         class={`w-full h-4 rounded-lg appearance-none bg-gradient-to-r ${cls} to-white`}
-        onInput={debounceValue((value) => fetch(path, { method: "POST", body: value }), 200)}
+        onInput={debounceValue((value) => fetch(path + value, { method: "POST" }), 200)}
       />
     </div>
   );
   return (
     <div class="flex(& col) bg-warmGray-300 rounded-lg p-2 gap-6" onTouchStart={() => false}>
-      {el("/settings/brightness", "☀️", "from-warmGray-200", brightness, ["1", "63"])}
-      {el("/settings/hue", "🔥", "from-orange-200", hue, ["0", "255"])}
+      {el("/settings2?brightness=", "☀️", "from-warmGray-200", brightness, ["1", "63"])}
+      {el("/settings2?hue=", "🔥", "from-orange-200", hue, ["0", "255"])}
     </div>
   );
 }
