@@ -6,8 +6,6 @@ import SpotifyTokens from "../islands/SpotifyTokens.tsx";
 import { parseData } from "../src/spv2.ts";
 
 interface Data {
-  brightness: string;
-  hue: string;
   states: Record<string, string | undefined>;
 }
 
@@ -21,15 +19,12 @@ export const handler: Handlers<Data> = {
   },
 };
 
-export default function Home(
-  {
-    data: {
-      brightness,
-      hue,
-      states,
-    },
-  }: PageProps<Data>,
-) {
+function parseSettings(data?: string) {
+  return data ? JSON.parse(atob(data)) : {};
+}
+
+export default function Home({ data: { states } }: PageProps<Data>) {
+  const { brightness, hue } = parseSettings(states["/settings2"]);
   const { auth, tokens = [] } = parseData(states["/led/spv2"]);
   return (
     <div class="p-4 mx-auto">
