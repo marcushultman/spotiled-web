@@ -21,6 +21,20 @@ function debounceValue(f: (value: string) => void, timeout: number) {
   };
 }
 
+/** WaveIndices
+
+std::pair<int, int> waveIndices(double t, uint8_t percent, int x, int width, int top, int bottom) {
+  auto x_percent = 100 * double(x) / 23;
+  auto f = x_percent < percent ? (percent - x_percent) / double(percent) : 0;
+  auto w = f * std::sin(2 * M_PI * (t + x) / width);
+  auto y1 = 8 + top * w;
+  auto y2 = 8 + bottom * w;
+  return {std::min<int>(std::floor(y1), std::floor(y2)),
+          std::max<int>(std::ceil(y1), std::ceil(y2))};
+}
+
+ */
+
 export default function BrightnessSlider({ brightness, hue }: Props) {
   const el = (path: string, label: string, cls: string, value: string, range: [string, string]) => (
     <div class="flex gap-2 items-center">
