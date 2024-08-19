@@ -7,15 +7,17 @@ import { parseData } from "../src/spv2.ts";
 
 interface Data {
   states: Record<string, string | undefined>;
+  deviceID?: string;
 }
 
 export const handler: Handlers<Data> = {
   async GET(req, ctx) {
     const data = req.headers.get("x-spotiled");
+    const deviceID = req.headers.get("x-device-id") ?? undefined;
     if (!data) {
       return ctx.renderNotFound();
     }
-    return ctx.render({ ...JSON.parse(atob(data)) });
+    return ctx.render({ ...JSON.parse(atob(data)), deviceID });
   },
 };
 
@@ -23,13 +25,13 @@ function parseSettings(data?: string) {
   return data ? JSON.parse(atob(data)) : {};
 }
 
-export default function Home({ data: { states } }: PageProps<Data>) {
+export default function Home({ data: { deviceID, states } }: PageProps<Data>) {
   const { brightness, hue } = parseSettings(states["/settings2"]);
   const { auth, tokens = [] } = parseData(states["/led/spv2"]);
   return (
     <div class="p-4 mx-auto">
       <div class="flex(& col) gap-4">
-        <h1 class="text-lg font-bold self-center">SpotiLED</h1>
+        <h1 class="text-lg font-bold self-center">{deviceID ?? "SpotiLED"}</h1>
         <div class="self-stretch flex(& col) gap-4 px-2 py-4 border-1 rounded-lg">
           <BrightnessSlider {...{ brightness, hue }} />
         </div>
