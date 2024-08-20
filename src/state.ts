@@ -23,6 +23,7 @@ export interface Display {
   width?: number;
   height?: number;
   xscroll?: number;
+  wave?: number;
 }
 
 export interface State {

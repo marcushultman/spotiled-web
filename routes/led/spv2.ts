@@ -202,15 +202,16 @@ async function requestNowPlaying(
     return;
   }
 
-  const displayFromLengths = (lengths: [number, number][]) => {
+  const displayFromLengths = (lengths: [number, number][]): Display => {
     console.log(token.access_token.slice(0, 8), "now playing", uri);
-    return ({
+    return {
       logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
       bytes: makeDisplay((ctx) => {
         ctx.fillStyle = "white";
         lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
       }),
-    });
+      wave: 5,
+    };
   };
 
   if (token.nowPlaying?.id === id) {
