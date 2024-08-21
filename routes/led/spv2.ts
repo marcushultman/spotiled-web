@@ -4,7 +4,7 @@ import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
 import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts";
 import { decodeServiceRequest, Display, encodeState, makeResponse } from "../../src/state.ts";
 import { Behavior } from "../../src/state.ts";
-import { DeviceCode, SPv2Data, Token } from "../../src/spv2.ts";
+import { AudioFeatures, DeviceCode, PlayState, SPv2Data, Token } from "../../src/spv2.ts";
 
 const CLIENT_ID = Deno.env.get("SPOTIFY_CLIENT_ID");
 const CLIENT_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET");
@@ -202,7 +202,7 @@ async function requestNowPlaying(
     return;
   }
 
-  const displayFromLengths = (lengths: [number, number][]): Display => {
+  const displayFromPlayState = ({ lengths, tempo }: PlayState): Display => {
     console.log(token.access_token.slice(0, 8), "now playing", uri);
     return {
       logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
@@ -210,21 +210,21 @@ async function requestNowPlaying(
         ctx.fillStyle = "white";
         lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
       }),
-      wave: 5,
+      wave: tempo,
     };
   };
 
-  if (token.nowPlaying?.id === id) {
+  if (token.nowPlaying?.id === id && token.nowPlaying?.tempo !== undefined) {
     token.nowPlaying.isPlaying = true;
-    return displayFromLengths(token.nowPlaying.lengths);
+    return displayFromPlayState(token.nowPlaying);
   }
 
   console.log(token.access_token.slice(0, 8), "fetch scannable", uri);
-  const [res1] = await Promise.all([
+  const [res1, res2] = await Promise.all([
     fetch(`${SCANNABLES_CDN_URL}${uri}?format=svg`),
-    // fetch(AUDIO_FEATURES_URL + id, {
-    //   headers: { authorization: `Bearer ${token.access_token}` },
-    // }),
+    fetch(AUDIO_FEATURES_URL + id, {
+      headers: { authorization: `Bearer ${token.access_token}` },
+    }),
   ]);
 
   const svgData = await res1.text();
@@ -239,8 +239,10 @@ async function requestNowPlaying(
       return [LENGTHS[a], LENGTHS[b]];
     });
 
-  token.nowPlaying = { id, lengths, isPlaying: true };
-  return displayFromLengths(lengths);
+  const { tempo }: AudioFeatures = await res2.json();
+
+  token.nowPlaying = { id, lengths, isPlaying: true, tempo };
+  return displayFromPlayState(token.nowPlaying);
 }
 
 function isLikelyToPlay() {
