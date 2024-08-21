@@ -210,7 +210,7 @@ async function requestNowPlaying(
         ctx.fillStyle = "white";
         lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
       }),
-      wave: tempo,
+      wave: tempo / 2,
     };
   };
 
