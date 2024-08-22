@@ -222,9 +222,7 @@ async function requestNowPlaying(
   console.log(token.access_token.slice(0, 8), "fetch scannable", uri);
   const [res1, res2] = await Promise.all([
     fetch(`${SCANNABLES_CDN_URL}${uri}?format=svg`),
-    fetch(AUDIO_FEATURES_URL + id, {
-      headers: { authorization: `Bearer ${token.access_token}` },
-    }),
+    fetch(AUDIO_FEATURES_URL + id, { headers: { authorization: `Bearer ${token.access_token}` } }),
   ]);
 
   const svgData = await res1.text();
