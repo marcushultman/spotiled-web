@@ -54,3 +54,7 @@ export function encodeState<T>(data?: T, display?: Display, behavior?: Behavior)
 export function makeResponse(res: ServiceResponse) {
   return Response.json(res);
 }
+
+export function redirect(id: string, base: string | URL) {
+  return Response.redirect(new URL(id, base), 307);
+}
