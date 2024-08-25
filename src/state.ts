@@ -48,7 +48,7 @@ export async function decodeServiceRequest<T>(req: Request, def: T): Promise<Ser
 }
 
 export function encodeState<T>(data?: T, display?: Display, behavior?: Behavior): State {
-  return { data: data ? btoa(JSON.stringify(data)) : "", display, behavior };
+  return { data: data ? btoa(JSON.stringify(data)) : "", display, ...behavior };
 }
 
 export function makeResponse(res: ServiceResponse) {
