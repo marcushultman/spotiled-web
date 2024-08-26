@@ -12,8 +12,7 @@ export const handler: Handlers = {
           ctx.fillStyle = "white";
           ctx.fillRect(0, 0, 10, 10);
         }),
-      }),
-      "/timeout/button": encodeState(undefined, undefined, { poll: 3000 }),
+      }, { timeout: 3000 }),
     });
   },
 };

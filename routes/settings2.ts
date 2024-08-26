@@ -47,11 +47,11 @@ export const handler: Handlers = {
       "/settings2": encodeState({ brightness, hue }),
       ...searchParams.size
         ? {
-          "/timeout/brightness": encodeState({ date: new Date() }, {
+          "/settings2/ui": encodeState(undefined, {
             logo: encode(new Uint8Array([0xff, 0xff, 0xff])),
             bytes: makeDisplay(brightness),
             prio: Prio.NOTIFICATION,
-          }, { poll: 3000 }),
+          }, { timeout: 3000 }),
         }
         : {},
     });

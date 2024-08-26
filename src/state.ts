@@ -8,6 +8,7 @@ export interface ServiceRequest<T> {
 
 export interface Behavior {
   poll?: number;
+  timeout?: number;
 }
 
 export enum Prio {

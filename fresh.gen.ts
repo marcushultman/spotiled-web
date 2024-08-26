@@ -15,7 +15,6 @@ import * as $led_text from "./routes/led/text.ts";
 import * as $ping from "./routes/ping.ts";
 import * as $settings2 from "./routes/settings2.ts";
 import * as $sports_index from "./routes/sports/index.tsx";
-import * as $timeout_path_ from "./routes/timeout/[...path].ts";
 import * as $BrightnessSlider from "./islands/BrightnessSlider.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $SpotifyAuthToggle from "./islands/SpotifyAuthToggle.tsx";
@@ -37,7 +36,6 @@ const manifest = {
     "./routes/ping.ts": $ping,
     "./routes/settings2.ts": $settings2,
     "./routes/sports/index.tsx": $sports_index,
-    "./routes/timeout/[...path].ts": $timeout_path_,
   },
   islands: {
     "./islands/BrightnessSlider.tsx": $BrightnessSlider,

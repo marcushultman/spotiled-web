@@ -27,7 +27,7 @@ export const handler: Handlers = {
 
     const width = CHAR_WIDTH * (text.length + 1);
     const xscroll = 10;
-    const poll = width * 1000 / xscroll;
+    const timeout = width * 1000 / xscroll;
 
     if (width > canvas.width) {
       canvas = createCanvas(width, 16);
@@ -52,8 +52,8 @@ export const handler: Handlers = {
           xscroll,
           prio: Prio.NOTIFICATION,
         },
+        { timeout },
       ),
-      "/timeout/led/text": encodeState({ date: new Date() }, undefined, { poll }),
     });
   },
 };
