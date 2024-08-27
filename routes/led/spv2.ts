@@ -237,7 +237,7 @@ async function requestNowPlaying(
       return [LENGTHS[a], LENGTHS[b]];
     });
 
-  const { tempo }: AudioFeatures = await res2.json();
+  const { tempo = 0 }: Partial<AudioFeatures> = res2.ok ? await res2.json() : {};
 
   token.nowPlaying = { id, lengths, isPlaying: true, tempo };
   return displayFromPlayState(token.nowPlaying);
