@@ -6,15 +6,11 @@ import {
 import { transpose } from "./transpose.ts";
 import { encode } from "$std/encoding/base64.ts";
 
-function _createCanvas(width: number, height: number) {
-  return createCanvas(width, height);
-}
+export { createCanvas };
 
-function _encodeCanvas(canvas: EmulatedCanvas2D, width = canvas.width) {
+export function encodeCanvas(canvas: EmulatedCanvas2D, width = canvas.width) {
   return encode(transpose(canvas.getContext("2d").getImageData(0, 0, width, canvas.height)));
 }
-
-export { _createCanvas as createCanvas, _encodeCanvas as encodeCanvas };
 
 const CTX = createCanvas(23, 16).getContext("2d");
 
