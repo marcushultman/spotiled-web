@@ -8,6 +8,8 @@ import { parseData } from "../src/spv2.ts";
 interface Data {
   states: Record<string, string | undefined>;
   deviceID?: string;
+  brightness: number;
+  hue: number;
 }
 
 export const handler: Handlers<Data> = {
@@ -17,16 +19,14 @@ export const handler: Handlers<Data> = {
     if (!data) {
       return ctx.renderNotFound();
     }
-    return ctx.render({ ...JSON.parse(atob(data)), deviceID });
+    const kv = await Deno.openKv();
+    const { value } = await kv.get<{ brightness: number; hue: number }>(["settings"]);
+    const { brightness = 31, hue = 255 } = value ?? {};
+    return ctx.render({ ...JSON.parse(atob(data)), deviceID, brightness, hue });
   },
 };
 
-function parseSettings(data?: string) {
-  return data ? JSON.parse(atob(data)) : {};
-}
-
-export default function Home({ data: { deviceID, states } }: PageProps<Data>) {
-  const { brightness, hue } = parseSettings(states["/settings2"]);
+export default function Home({ data: { states, deviceID, brightness, hue } }: PageProps<Data>) {
   const { auth, tokens = [] } = parseData(states["/led/spv2"]);
   return (
     <div class="p-4 mx-auto">

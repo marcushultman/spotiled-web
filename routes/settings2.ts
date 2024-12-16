@@ -29,7 +29,7 @@ const LENGTHS = [
 function makeDisplay(brightness = 0) {
   const ctx = CANVAS.getContext("2d");
   ctx.clearRect(0, 0, 23, 16);
-  ctx.fillStyle = "white";
+  ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
   const end = 23 * (brightness ?? 0) / 64;
   LENGTHS.slice(0, end).forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
   return encodeCanvas(CANVAS);
@@ -43,12 +43,16 @@ export const handler: Handlers = {
       parseNumber(searchParams.get("brightness")) ?? brightness,
       parseNumber(searchParams.get("hue")) ?? hue,
     ];
+
+    const kv = await Deno.openKv();
+    await kv.set(["settings"], { brightness, hue });
+
     return makeResponse({
-      "/settings2": encodeState({ brightness, hue }),
+      "/settings2": null,
       ...searchParams.size
         ? {
           "/settings2/ui": encodeState(undefined, {
-            logo: encode(new Uint8Array([0xff, 0xff, 0xff])),
+            logo: encode(new Uint8Array([brightness ?? 0, brightness ?? 0, brightness ?? 0])),
             bytes: makeDisplay(brightness),
             prio: Prio.NOTIFICATION,
           }, { timeout: 3000 }),

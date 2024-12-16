@@ -94,7 +94,7 @@ async function pollToken(deviceCode: DeviceCode): Promise<Token> {
 
 const AUTHENTICATE_CANVAS = createCanvas(48, 16);
 
-async function authenticate(data: SPv2Data) {
+async function authenticate(data: SPv2Data, brightness: number) {
   try {
     let { deviceCode } = data.auth ?? {};
 
@@ -113,14 +113,14 @@ async function authenticate(data: SPv2Data) {
       ctx.clearRect(0, 0, width, height);
 
       ctx.scale(0.66, 1);
-      ctx.fillStyle = "white";
+      ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
       ctx.font = "16px monospace";
       ctx.fillText(e.deviceCode.user_code, 3 / 0.66, 14);
 
       return makeSpv2Response(
         data,
         {
-          logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
+          logo: encode(new Uint8Array([brightness, brightness, brightness])),
           bytes: encodeCanvas(AUTHENTICATE_CANVAS),
           width,
           height,
@@ -138,7 +138,7 @@ type OnRetryAfter = (retryAfter: number) => void;
 
 class DidLogoutError extends Error {}
 
-async function refreshToken(token: Token, onRetryAfter: OnRetryAfter) {
+async function refreshToken(token: Token, brightness: number, onRetryAfter: OnRetryAfter) {
   const res = await fetch(AUTH_TOKEN_URL, {
     method: "POST",
     headers: { "content-type": XWWW_FORM_URL_ENCODED },
@@ -154,11 +154,12 @@ async function refreshToken(token: Token, onRetryAfter: OnRetryAfter) {
   token.access_token = access_token;
   token.refresh_token = refresh_token;
 
-  return requestNowPlaying(token, onRetryAfter, true);
+  return requestNowPlaying(token, brightness, onRetryAfter, true);
 }
 
 async function requestNowPlaying(
   token: Token,
+  brightness: number,
   onRetryAfter: OnRetryAfter,
   disableRetry = false,
 ): Promise<Display | DidLogoutError | undefined> {
@@ -175,7 +176,7 @@ async function requestNowPlaying(
     }
     if (!disableRetry) {
       console.error(`fetch now playing failed with status ${res.status}`);
-      return refreshToken(token, onRetryAfter);
+      return refreshToken(token, brightness, onRetryAfter);
     }
     return;
   }
@@ -205,9 +206,9 @@ async function requestNowPlaying(
   const displayFromPlayState = ({ lengths, tempo }: PlayState): Display => {
     console.log(token.access_token.slice(0, 8), "now playing", uri);
     return {
-      logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
+      logo: encode(new Uint8Array([brightness, brightness, brightness])),
       bytes: makeDisplay((ctx) => {
-        ctx.fillStyle = "white";
+        ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
         lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
       }),
       wave: tempo / 2,
@@ -265,8 +266,12 @@ export const handler: Handlers = {
     const toggleAuth = url.searchParams.has("auth");
     const { data } = await decodeServiceRequest<SPv2Data>(req, {});
 
+    const kv = await Deno.openKv();
+    const { value } = await kv.get<{ brightness: number }>(["settings"]);
+    const { brightness = 31 } = value ?? {};
+
     if (toggleAuth ? !data.auth : data.auth) {
-      const res = await authenticate(data);
+      const res = await authenticate(data, brightness);
       if (res) {
         return res;
       }
@@ -284,6 +289,7 @@ export const handler: Handlers = {
       const token = data.tokens[i];
       const result = await requestNowPlaying(
         token,
+        brightness,
         (retryAfter) => poll = Math.max(poll, retryAfter),
       );
       if (result instanceof DidLogoutError) {

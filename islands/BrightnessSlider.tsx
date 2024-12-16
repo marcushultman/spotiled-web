@@ -1,8 +1,8 @@
 import { JSX } from "preact";
 
 interface Props {
-  brightness: string;
-  hue: string;
+  brightness: number;
+  hue: number;
 }
 
 function debounceValue(f: (value: string) => void, timeout: number) {
@@ -36,7 +36,7 @@ std::pair<int, int> waveIndices(double t, uint8_t percent, int x, int width, int
  */
 
 export default function BrightnessSlider({ brightness, hue }: Props) {
-  const el = (path: string, label: string, cls: string, value: string, range: [string, string]) => (
+  const el = (path: string, label: string, cls: string, value: number, range: [string, string]) => (
     <div class="flex gap-2 items-center">
       <span>{label}</span>
       <input

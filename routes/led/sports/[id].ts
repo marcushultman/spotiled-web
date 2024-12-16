@@ -11,8 +11,8 @@ interface Data {
   enabled: boolean;
 }
 
-function toHex([r, g, b]: Uint8Array) {
-  return `#${[r, g, b].map((b) => b.toString(16)).join("")}`;
+function toHex([r, g, b]: Uint8Array, brightness: number) {
+  return `#${[r, g, b].map((b) => (brightness * b / 255).toString(16)).join("")}`;
 }
 
 export const handler: Handlers = {
@@ -20,6 +20,10 @@ export const handler: Handlers = {
     const url = new URL(req.url);
     const id = url.pathname;
     const { data: { enabled } } = await decodeServiceRequest<Data>(req, { enabled: false });
+
+    const kv = await Deno.openKv();
+    const { value } = await kv.get<{ brightness: number }>(["settings"]);
+    const { brightness = 31 } = value ?? {};
 
     if (enabled && url.searchParams.has("toggle")) {
       console.log(`${id}: hiding`);
@@ -92,9 +96,9 @@ export const handler: Handlers = {
         {
           logo: encode(logoColor),
           bytes: makeDisplay((ctx) => {
-            ctx.fillStyle = homeColor ? toHex(homeColor) : "#ff0000";
+            ctx.fillStyle = homeColor ? toHex(homeColor, brightness) : `rgb(${brightness},0,0)`;
             ctx.fillRect(0, 0, 2, 16);
-            ctx.fillStyle = awayColor ? toHex(awayColor) : "#0000ff";
+            ctx.fillStyle = awayColor ? toHex(awayColor, brightness) : `rgb(0,0,${brightness})`;
             ctx.fillRect(21, 0, 2, 16);
 
             ctx.scale(0.5, 1);

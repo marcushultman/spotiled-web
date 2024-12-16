@@ -25,6 +25,10 @@ export const handler: Handlers = {
     const text = url.searchParams.get("text")?.toUpperCase() ??
       (await decodeServiceRequest<Data>(req, { text: "" })).data.text;
 
+    const kv = await Deno.openKv();
+    const { value } = await kv.get<{ brightness: number }>(["settings"]);
+    const { brightness = 31 } = value ?? {};
+
     const width = CHAR_WIDTH * (text.length + 1);
     const xscroll = 10;
     const timeout = width * 1000 / xscroll;
@@ -38,7 +42,7 @@ export const handler: Handlers = {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.scale(0.8, 1);
 
-    ctx.fillStyle = "white";
+    ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
     ctx.font = "14px monospace";
     ctx.fillText(text, 0, 13);
 
@@ -46,7 +50,7 @@ export const handler: Handlers = {
       "/led/text": encodeState(
         { text },
         {
-          logo: encode(new Uint8Array([0xFF, 0xFF, 0xFF])),
+          logo: encode(new Uint8Array([brightness, brightness, brightness])),
           bytes: encodeCanvas(canvas, width),
           width,
           xscroll,
