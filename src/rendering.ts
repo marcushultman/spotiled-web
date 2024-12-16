@@ -2,7 +2,7 @@ import {
   CanvasRenderingContext2D,
   createCanvas,
   EmulatedCanvas2D,
-} from "https://deno.land/x/canvas@v1.4.1/mod.ts";
+} from "https://deno.land/x/canvas@v1.4.2/mod.ts";
 import { transpose } from "./transpose.ts";
 import { encode } from "$std/encoding/base64.ts";
 
