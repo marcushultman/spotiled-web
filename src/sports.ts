@@ -1,7 +1,7 @@
 import { FIXTURES, LINEUP } from "./sports_data.ts";
 
 const API = "https://v3.football.api-sports.io";
-const API_CACHE = "caches" in window ? await caches.open(API) : undefined;
+const API_CACHE = "caches" in globalThis ? await caches.open(API) : undefined;
 const REQ_INIT = { headers: { "x-apisports-key": "4c470321f1e01c39d3b2df384f67c7c7" } };
 
 async function fetchWithCache(input: RequestInfo | URL, init?: RequestInit | undefined) {
