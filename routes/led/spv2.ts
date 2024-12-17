@@ -239,6 +239,9 @@ async function requestNowPlaying(
     });
 
   const { tempo = 0 }: Partial<AudioFeatures> = res2.ok ? await res2.json() : {};
+  if (!res2.ok) {
+    console.error(`fetch audio-features failed with status ${res2.status}`);
+  }
 
   token.nowPlaying = { id, lengths, isPlaying: true, tempo };
   return displayFromPlayState(token.nowPlaying);
