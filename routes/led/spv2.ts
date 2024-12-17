@@ -12,7 +12,7 @@ const CLIENT_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET");
 assert(CLIENT_ID);
 assert(CLIENT_SECRET);
 
-const AUTH_DEVICE_CODE_URL = "https://accounts.spotify.com/api/device/code";
+const AUTH_DEVICE_CODE_URL = "https://accounts.spotify.com/oauth2/device/authorize";
 const AUTH_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const PLAYER_URL = "https://api.spotify.com/v1/me/player?additional_types=track,episode";
 const SCANNABLES_CDN_URL = "https://scannables.scdn.co/uri/plain/svg/000000/white/400/";
@@ -48,13 +48,13 @@ async function requestDeviceCode(): Promise<DeviceCode> {
   interface DeviceFlowData {
     device_code: string;
     user_code: string;
+    verification_uri: string;
+    verification_uri_complete: string;
     expires_in: number;
-    verification_url: string;
-    verification_url_prefilled: string;
     interval: number;
   }
   const data: DeviceFlowData = await res.json();
-  console.info("url:", data.verification_url_prefilled);
+  console.info("url:", data.verification_uri_complete);
 
   return {
     expiry: Date.now() + data.expires_in * 1000,
