@@ -19,7 +19,7 @@ import * as $BrightnessSlider from "./islands/BrightnessSlider.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $SpotifyAuthToggle from "./islands/SpotifyAuthToggle.tsx";
 import * as $SpotifyTokens from "./islands/SpotifyTokens.tsx";
-import { type Manifest } from "$fresh/server.ts";
+import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {
