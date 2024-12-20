@@ -2,7 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 
 import { encode } from "$std/encoding/base64.ts";
 import { makeDisplay } from "../../../src/rendering.ts";
-import { encodeState, makeResponse } from "../../../src/state.ts";
+import { makeResponse, makeState } from "../../../src/state.ts";
 import { getFixtureAndLineup } from "../../../src/sports.ts";
 import { decodeServiceRequest } from "../../../src/state.ts";
 import moment from "npm:moment";
@@ -53,7 +53,7 @@ export const handler: Handlers = {
       const startsIn = date - now;
       console.log(`${printLead}: starts ${moment(date).from(now)}`);
       const poll = Math.min(startsIn, 60 * 60 * 1000); // check back in <= 1h
-      return makeResponse({ [id]: encodeState<Data>({ enabled: true }, undefined, { poll }) });
+      return makeResponse({ [id]: makeState<Data>({ data: { enabled: true }, poll }) });
     }
 
     // Game was not played..?
@@ -91,9 +91,9 @@ export const handler: Handlers = {
 
     console.log(`${printLead}: ${goals.home} - ${goals.away}`);
     return makeResponse({
-      [id]: encodeState<Data>(
-        { enabled: true },
-        {
+      [id]: makeState<Data>({
+        data: { enabled: true },
+        display: {
           logo: encode(logoColor),
           bytes: makeDisplay((ctx) => {
             ctx.fillStyle = homeColor ? toHex(homeColor, brightness) : `rgb(${brightness},0,0)`;
@@ -108,8 +108,8 @@ export const handler: Handlers = {
             ctx.fillText(goals.away.toString(), 15 / 0.5, 14);
           }),
         },
-        { poll: poll || 5000 },
-      ),
+        poll: poll || 5000,
+      }),
     });
   },
 };

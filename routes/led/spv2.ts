@@ -2,8 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
 import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts";
-import { decodeServiceRequest, Display, encodeState, makeResponse } from "../../src/state.ts";
-import { Behavior } from "../../src/state.ts";
+import { decodeServiceRequest, Display, makeResponse, makeState } from "../../src/state.ts";
 import { AudioFeatures, DeviceCode, PlayState, SPv2Data, Token } from "../../src/spv2.ts";
 import { timeOfDayBrightness } from "../../src/time_of_day_brightness.ts";
 import { Color } from "../../src/time_of_day_brightness.ts";
@@ -24,8 +23,13 @@ const XWWW_FORM_URL_ENCODED = "application/x-www-form-urlencoded";
 
 type TokenData = { error: string } & Token;
 
+interface Behavior {
+  poll?: number;
+  timeout?: number;
+}
+
 function makeSpv2Response(data?: SPv2Data, display?: Display, behavior?: Behavior) {
-  return makeResponse({ "/led/spv2": encodeState(data, display, behavior) });
+  return makeResponse({ "/led/spv2": makeState({ data, display, ...behavior }) });
 }
 
 //

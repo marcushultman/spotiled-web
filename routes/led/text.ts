@@ -4,7 +4,7 @@ import { encodeCanvas } from "../../src/rendering.ts";
 import { createCanvas } from "../../src/rendering.ts";
 import { decodeServiceRequest } from "../../src/state.ts";
 import { Prio } from "../../src/state.ts";
-import { encodeState, makeResponse } from "../../src/state.ts";
+import { makeResponse, makeState } from "../../src/state.ts";
 
 interface Data {
   text: string;
@@ -47,17 +47,17 @@ export const handler: Handlers = {
     ctx.fillText(text, 0, 13);
 
     return makeResponse({
-      "/led/text": encodeState(
-        { text },
-        {
+      "/led/text": makeState({
+        data: { text },
+        display: {
           logo: encode(new Uint8Array([brightness, brightness, brightness])),
           bytes: encodeCanvas(canvas, width),
           width,
           xscroll,
           prio: Prio.NOTIFICATION,
         },
-        { timeout },
-      ),
+        timeout,
+      }),
     });
   },
 };

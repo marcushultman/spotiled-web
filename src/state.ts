@@ -6,11 +6,6 @@ export interface ServiceRequest<T> {
 
 // Response
 
-export interface Behavior {
-  poll?: number;
-  timeout?: number;
-}
-
 export enum Prio {
   APP = 0,
   NOTIFICATION = 1,
@@ -28,9 +23,10 @@ export interface Display {
 }
 
 export interface State {
-  data: string;
-  behavior?: Behavior;
+  data?: string;
   display?: Display;
+  poll?: number;
+  timeout?: number;
 }
 
 export interface ServiceResponse {
@@ -48,8 +44,10 @@ export async function decodeServiceRequest<T>(req: Request, def: T): Promise<Ser
   }
 }
 
-export function encodeState<T>(data?: T, display?: Display, behavior?: Behavior): State {
-  return { data: data ? btoa(JSON.stringify(data)) : "", display, ...behavior };
+export type Params<T> = { data?: T } & Partial<Omit<State, "data">>;
+
+export function makeState<T>({ data, ...params }: Params<T> = {}): State {
+  return { ...data ? { data: btoa(JSON.stringify(data)) } : {}, ...params };
 }
 
 export function makeResponse(res: ServiceResponse) {

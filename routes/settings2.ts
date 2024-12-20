@@ -2,7 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { createCanvas, encodeCanvas } from "../src/rendering.ts";
 import { decodeServiceRequest, Prio } from "../src/state.ts";
-import { encodeState } from "../src/state.ts";
+import { makeState } from "../src/state.ts";
 import { makeResponse } from "../src/state.ts";
 import { Color, timeOfDayBrightness } from "../src/time_of_day_brightness.ts";
 
@@ -55,11 +55,14 @@ export const handler: Handlers = {
       "/settings2": null,
       ...searchParams.size
         ? {
-          "/settings2/ui": encodeState(undefined, {
-            logo: encode(new Uint8Array(color)),
-            bytes: makeDisplay(brightness, color),
-            prio: Prio.NOTIFICATION,
-          }, { timeout: 3000 }),
+          "/settings2/ui": makeState({
+            display: {
+              logo: encode(new Uint8Array(color)),
+              bytes: makeDisplay(brightness, color),
+              prio: Prio.NOTIFICATION,
+            },
+            timeout: 3000,
+          }),
         }
         : {},
     });

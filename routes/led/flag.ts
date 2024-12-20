@@ -1,7 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { encode } from "https://deno.land/std@0.106.0/encoding/base64.ts";
 import { makeDisplay } from "../../src/rendering.ts";
-import { decodeServiceRequest, encodeState, Prio } from "../../src/state.ts";
+import { decodeServiceRequest, makeState, Prio } from "../../src/state.ts";
 import { timeOfDayBrightness } from "../../src/time_of_day_brightness.ts";
 
 interface Data {
@@ -42,7 +42,9 @@ export const handler: Handlers = {
     }
 
     return Response.json({
-      "/led/flag": encodeState({ enabled: true }, { logo, bytes, prio: Prio.NOTIFICATION }, {
+      "/led/flag": makeState({
+        data: { enabled: true },
+        display: { logo, bytes, prio: Prio.NOTIFICATION },
         poll: 3000,
       }),
     });
