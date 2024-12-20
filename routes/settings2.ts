@@ -4,6 +4,7 @@ import { createCanvas, encodeCanvas } from "../src/rendering.ts";
 import { decodeServiceRequest, Prio } from "../src/state.ts";
 import { encodeState } from "../src/state.ts";
 import { makeResponse } from "../src/state.ts";
+import { Color, timeOfDayBrightness } from "../src/time_of_day_brightness.ts";
 
 interface Data {
   brightness?: number;
@@ -26,10 +27,11 @@ const LENGTHS = [
   [ 6, 6 ], [ 1, 1 ]
 ];
 
-function makeDisplay(brightness = 0) {
+function makeDisplay(brightness: number, color: Color) {
   const ctx = CANVAS.getContext("2d");
   ctx.clearRect(0, 0, 23, 16);
-  ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
+  const [r, g, b] = color;
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
   const end = 23 * (brightness ?? 0) / 64;
   LENGTHS.slice(0, end).forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
   return encodeCanvas(CANVAS);
@@ -37,7 +39,7 @@ function makeDisplay(brightness = 0) {
 
 export const handler: Handlers = {
   async POST(req) {
-    let { data: { brightness, hue } } = await decodeServiceRequest<Data>(req, {});
+    let { data: { brightness = 1, hue = 255 } } = await decodeServiceRequest<Data>(req, {});
     const { searchParams } = new URL(req.url);
     [brightness, hue] = [
       parseNumber(searchParams.get("brightness")) ?? brightness,
@@ -47,13 +49,15 @@ export const handler: Handlers = {
     const kv = await Deno.openKv();
     await kv.set(["settings"], { brightness, hue });
 
+    const color = timeOfDayBrightness({ brightness, hue });
+
     return makeResponse({
       "/settings2": null,
       ...searchParams.size
         ? {
           "/settings2/ui": encodeState(undefined, {
-            logo: encode(new Uint8Array([brightness ?? 0, brightness ?? 0, brightness ?? 0])),
-            bytes: makeDisplay(brightness),
+            logo: encode(new Uint8Array(color)),
+            bytes: makeDisplay(brightness, color),
             prio: Prio.NOTIFICATION,
           }, { timeout: 3000 }),
         }

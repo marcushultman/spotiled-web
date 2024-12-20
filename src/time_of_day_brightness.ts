@@ -36,7 +36,7 @@ interface Settings {
 
 export function timeOfDayBrightness(bp: Settings, hour = getHour()): Color {
   const f = _timeOfDayBrightness(bp.brightness, hour);
-  return hueFactor(bp.hue / 255.0).map((v) => v * f) as Color;
+  return hueFactor(bp.hue / 255.0).map((v) => Math.floor(v * f / 255)) as Color;
 }
 
 if (import.meta.main) {
