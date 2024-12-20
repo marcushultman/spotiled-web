@@ -2,7 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
 import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts";
-import { decodeServiceRequest, Display, makeResponse, makeState } from "../../src/state.ts";
+import { decodeServiceRequest, Display, makeResponse, makeState, Params } from "../../src/state.ts";
 import { AudioFeatures, DeviceCode, PlayState, SPv2Data, Token } from "../../src/spv2.ts";
 import { timeOfDayBrightness } from "../../src/time_of_day_brightness.ts";
 import { Color } from "../../src/time_of_day_brightness.ts";
@@ -23,13 +23,8 @@ const XWWW_FORM_URL_ENCODED = "application/x-www-form-urlencoded";
 
 type TokenData = { error: string } & Token;
 
-interface Behavior {
-  poll?: number;
-  timeout?: number;
-}
-
-function makeSpv2Response(data?: SPv2Data, display?: Display, behavior?: Behavior) {
-  return makeResponse({ "/led/spv2": makeState({ data, display, ...behavior }) });
+function makeSpv2Response(params?: Params<SPv2Data>) {
+  return makeResponse({ "/led/spv2": makeState(params) });
 }
 
 //
@@ -123,20 +118,20 @@ async function authenticate(data: SPv2Data, brightness: number) {
       ctx.font = "16px monospace";
       ctx.fillText(e.deviceCode.user_code, 3 / 0.66, 14);
 
-      return makeSpv2Response(
+      return makeSpv2Response({
         data,
-        {
+        display: {
           logo: encode(new Uint8Array([brightness, brightness, brightness])),
           bytes: encodeCanvas(AUTHENTICATE_CANVAS),
           width,
           height,
           xscroll: 5,
         },
-        { poll: e.deviceCode.interval * 1000 },
-      );
+        poll: e.deviceCode.interval * 1000,
+      });
     }
     console.error(e instanceof Error ? e.message : `Unknown error: ${e}`);
-    return makeSpv2Response({ ...data, auth: {} }, undefined, { poll: 5000 });
+    return makeSpv2Response({ data: { ...data, auth: {} }, poll: 5000 });
   }
 }
 
@@ -310,12 +305,12 @@ export const handler: Handlers = {
         // Re-order tokens
         data.tokens.unshift(...data.tokens.splice(i, 1));
         data.numRequests = 0;
-        return makeSpv2Response(data, result, { poll: 5000 });
+        return makeSpv2Response({ data, display: result, poll: 5000 });
       }
     }
 
     console.info("nothing is playing, retry in:", Math.floor(poll / 1000), "s");
     data.numRequests = Math.min((data.numRequests ?? 0) + 1, 31);
-    return makeSpv2Response(data, undefined, { poll });
+    return makeSpv2Response({ data, poll });
   },
 };
