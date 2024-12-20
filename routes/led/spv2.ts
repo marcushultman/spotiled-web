@@ -2,7 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { assert } from "https://deno.land/std@0.216.0/assert/assert.ts";
 import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts";
-import { decodeServiceRequest, Display, makeResponse, makeState, Params } from "../../src/state.ts";
+import { Display, makeResponse, makeState, Params, parseData } from "../../src/state.ts";
 import { AudioFeatures, DeviceCode, PlayState, SPv2Data, Token } from "../../src/spv2.ts";
 import { timeOfDayBrightness } from "../../src/time_of_day_brightness.ts";
 import { Color } from "../../src/time_of_day_brightness.ts";
@@ -269,7 +269,7 @@ export const handler: Handlers = {
   async POST(req, _) {
     const url = new URL(req.url);
     const toggleAuth = url.searchParams.has("auth");
-    const { data } = await decodeServiceRequest<SPv2Data>(req, {});
+    const data = await parseData<SPv2Data>(req, {});
 
     const kv = await Deno.openKv();
     const { value } = await kv.get<{ brightness: number; hue: number }>(["settings"]);

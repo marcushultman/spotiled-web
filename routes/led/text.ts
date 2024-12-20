@@ -2,7 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { encodeCanvas } from "../../src/rendering.ts";
 import { createCanvas } from "../../src/rendering.ts";
-import { decodeServiceRequest } from "../../src/state.ts";
+import { parseData } from "../../src/state.ts";
 import { Prio } from "../../src/state.ts";
 import { makeResponse, makeState } from "../../src/state.ts";
 
@@ -23,7 +23,7 @@ export const handler: Handlers = {
   POST: async (req) => {
     const url = new URL(req.url);
     const text = url.searchParams.get("text")?.toUpperCase() ??
-      (await decodeServiceRequest<Data>(req, { text: "" })).data.text;
+      (await parseData<Data>(req, { text: "" })).text;
 
     const kv = await Deno.openKv();
     const { value } = await kv.get<{ brightness: number }>(["settings"]);

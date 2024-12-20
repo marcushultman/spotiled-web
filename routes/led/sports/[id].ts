@@ -4,7 +4,7 @@ import { encode } from "$std/encoding/base64.ts";
 import { makeDisplay } from "../../../src/rendering.ts";
 import { makeResponse, makeState } from "../../../src/state.ts";
 import { getFixtureAndLineup } from "../../../src/sports.ts";
-import { decodeServiceRequest } from "../../../src/state.ts";
+import { parseData } from "../../../src/state.ts";
 import moment from "npm:moment";
 
 interface Data {
@@ -19,7 +19,7 @@ export const handler: Handlers = {
   async POST(req, routeCtx) {
     const url = new URL(req.url);
     const id = url.pathname;
-    const { data: { enabled } } = await decodeServiceRequest<Data>(req, { enabled: false });
+    const { enabled } = await parseData<Data>(req, { enabled: false });
 
     const kv = await Deno.openKv();
     const { value } = await kv.get<{ brightness: number }>(["settings"]);

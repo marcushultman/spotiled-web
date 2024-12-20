@@ -1,7 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { encode } from "https://deno.land/std@0.106.0/encoding/base64.ts";
 import { makeDisplay } from "../../src/rendering.ts";
-import { decodeServiceRequest, makeState, Prio } from "../../src/state.ts";
+import { makeState, parseData, Prio } from "../../src/state.ts";
 import { timeOfDayBrightness } from "../../src/time_of_day_brightness.ts";
 
 interface Data {
@@ -10,7 +10,7 @@ interface Data {
 
 export const handler: Handlers = {
   async POST(req, _) {
-    const { data: { enabled } } = await decodeServiceRequest<Data>(req, { enabled: false });
+    const { enabled } = await parseData<Data>(req, { enabled: false });
 
     const kv = await Deno.openKv();
     const { value } = await kv.get<{ brightness: number; hue: number }>(["settings"]);

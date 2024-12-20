@@ -1,7 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { encode } from "$std/encoding/base64.ts";
 import { createCanvas, encodeCanvas } from "../src/rendering.ts";
-import { decodeServiceRequest, Prio } from "../src/state.ts";
+import { parseData, Prio } from "../src/state.ts";
 import { makeState } from "../src/state.ts";
 import { makeResponse } from "../src/state.ts";
 import { Color, timeOfDayBrightness } from "../src/time_of_day_brightness.ts";
@@ -39,7 +39,7 @@ function makeDisplay(brightness: number, color: Color) {
 
 export const handler: Handlers = {
   async POST(req) {
-    let { data: { brightness = 1, hue = 255 } } = await decodeServiceRequest<Data>(req, {});
+    let { brightness = 1, hue = 255 } = await parseData<Data>(req, {});
     const { searchParams } = new URL(req.url);
     [brightness, hue] = [
       parseNumber(searchParams.get("brightness")) ?? brightness,

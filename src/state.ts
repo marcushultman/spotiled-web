@@ -1,11 +1,3 @@
-// Request
-
-export interface ServiceRequest<T> {
-  data: T;
-}
-
-// Response
-
 export enum Prio {
   APP = 0,
   NOTIFICATION = 1,
@@ -29,18 +21,11 @@ export interface State {
   timeout?: number;
 }
 
-export interface ServiceResponse {
-  [id: string]: State | null;
-}
-
-// Helpers
-
-export async function decodeServiceRequest<T>(req: Request, def: T): Promise<ServiceRequest<T>> {
+export async function parseData<T>(body: Body, def: T): Promise<T> {
   try {
-    const data = await req.text();
-    return { data: JSON.parse(atob(data)) };
+    return JSON.parse(atob(await body.text()));
   } catch (_) {
-    return { data: def };
+    return def;
   }
 }
 
@@ -50,8 +35,8 @@ export function makeState<T>({ data, ...params }: Params<T> = {}): State {
   return { ...data ? { data: btoa(JSON.stringify(data)) } : {}, ...params };
 }
 
-export function makeResponse(res: ServiceResponse) {
-  return Response.json(res);
+export function makeResponse(states: { [id: string]: State | null }) {
+  return Response.json(states);
 }
 
 export function redirect(id: string, base: string | URL) {
