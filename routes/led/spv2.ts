@@ -5,6 +5,8 @@ import { createCanvas, encodeCanvas, makeDisplay } from "../../src/rendering.ts"
 import { decodeServiceRequest, Display, encodeState, makeResponse } from "../../src/state.ts";
 import { Behavior } from "../../src/state.ts";
 import { AudioFeatures, DeviceCode, PlayState, SPv2Data, Token } from "../../src/spv2.ts";
+import { timeOfDayBrightness } from "../../src/time_of_day_brightness.ts";
+import { Color } from "../../src/time_of_day_brightness.ts";
 
 const CLIENT_ID = Deno.env.get("SPOTIFY_CLIENT_ID");
 const CLIENT_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET");
@@ -138,7 +140,7 @@ type OnRetryAfter = (retryAfter: number) => void;
 
 class DidLogoutError extends Error {}
 
-async function refreshToken(token: Token, brightness: number, onRetryAfter: OnRetryAfter) {
+async function refreshToken(token: Token, color: Color, onRetryAfter: OnRetryAfter) {
   const res = await fetch(AUTH_TOKEN_URL, {
     method: "POST",
     headers: { "content-type": XWWW_FORM_URL_ENCODED },
@@ -154,12 +156,12 @@ async function refreshToken(token: Token, brightness: number, onRetryAfter: OnRe
   token.access_token = access_token;
   token.refresh_token = refresh_token;
 
-  return requestNowPlaying(token, brightness, onRetryAfter, true);
+  return requestNowPlaying(token, color, onRetryAfter, true);
 }
 
 async function requestNowPlaying(
   token: Token,
-  brightness: number,
+  color: Color,
   onRetryAfter: OnRetryAfter,
   disableRetry = false,
 ): Promise<Display | DidLogoutError | undefined> {
@@ -176,7 +178,7 @@ async function requestNowPlaying(
     }
     if (!disableRetry) {
       console.error(`fetch now playing failed with status ${res.status}`);
-      return refreshToken(token, brightness, onRetryAfter);
+      return refreshToken(token, color, onRetryAfter);
     }
     return;
   }
@@ -205,10 +207,11 @@ async function requestNowPlaying(
 
   const displayFromPlayState = ({ lengths, tempo }: PlayState): Display => {
     console.log(token.access_token.slice(0, 8), "now playing", uri);
+    const [r, g, b] = color;
     return {
-      logo: encode(new Uint8Array([brightness, brightness, brightness])),
+      logo: encode(new Uint8Array(color)),
       bytes: makeDisplay((ctx) => {
-        ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
         lengths.forEach(([l0, l1], x) => ctx.fillRect(x, 8 - l0, 1, l0 + l1));
       }),
       wave: tempo / 2,
@@ -270,8 +273,9 @@ export const handler: Handlers = {
     const { data } = await decodeServiceRequest<SPv2Data>(req, {});
 
     const kv = await Deno.openKv();
-    const { value } = await kv.get<{ brightness: number }>(["settings"]);
-    const { brightness = 31 } = value ?? {};
+    const { value } = await kv.get<{ brightness: number; hue: number }>(["settings"]);
+    const { brightness = 1, hue = 255 } = value ?? {};
+    const color = timeOfDayBrightness({ brightness, hue });
 
     if (toggleAuth ? !data.auth : data.auth) {
       const res = await authenticate(data, brightness);
@@ -292,7 +296,7 @@ export const handler: Handlers = {
       const token = data.tokens[i];
       const result = await requestNowPlaying(
         token,
-        brightness,
+        color,
         (retryAfter) => poll = Math.max(poll, retryAfter),
       );
       if (result instanceof DidLogoutError) {
