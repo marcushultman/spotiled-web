@@ -95,7 +95,7 @@ async function pollToken(deviceCode: DeviceCode): Promise<Token> {
 
 const AUTHENTICATE_CANVAS = createCanvas(48, 16);
 
-async function authenticate(data: SPv2Data, brightness: number) {
+async function handleAuthentication(data: SPv2Data, color: Color) {
   try {
     let { deviceCode } = data.auth ?? {};
 
@@ -104,6 +104,7 @@ async function authenticate(data: SPv2Data, brightness: number) {
       data.auth = { deviceCode };
     }
     data.tokens = [await pollToken(deviceCode), ...data.tokens ?? []];
+    delete data.auth;
   } catch (e: unknown) {
     if (e instanceof AuthorizationPendingError) {
       console.log("authorization_pending");
@@ -114,14 +115,15 @@ async function authenticate(data: SPv2Data, brightness: number) {
       ctx.clearRect(0, 0, width, height);
 
       ctx.scale(0.66, 1);
-      ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
+      const [r, g, b] = color;
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.font = "16px monospace";
       ctx.fillText(e.deviceCode.user_code, 3 / 0.66, 14);
 
       return makeSpv2Response({
         data,
         display: {
-          logo: encode(new Uint8Array([brightness, brightness, brightness])),
+          logo: encode(new Uint8Array(color)),
           bytes: encodeCanvas(AUTHENTICATE_CANVAS),
           width,
           height,
@@ -133,6 +135,8 @@ async function authenticate(data: SPv2Data, brightness: number) {
     console.error(e instanceof Error ? e.message : `Unknown error: ${e}`);
     return makeSpv2Response({ data: { ...data, auth: {} }, poll: 5000 });
   }
+
+  return handleAnyPlaying(data, color);
 }
 
 type OnRetryAfter = (retryAfter: number) => void;
@@ -265,6 +269,41 @@ function requestBackoff(numRequest: number) {
   return 10000 * Math.floor(Math.min(1 << Math.max(numRequest, 1) - 1, maxFactor));
 }
 
+async function handleAnyPlaying(data: SPv2Data, color: Color) {
+  if (data.lastRequestAt && Date.now() >= data.lastRequestAt + 36001000) {
+    data.numRequests = 0;
+  }
+  data.lastRequestAt = Date.now();
+
+  let poll = requestBackoff(data.numRequests ?? 0);
+
+  for (let i = 0; data.tokens && i < data.tokens.length; ++i) {
+    const token = data.tokens[i];
+    try {
+      const display = await requestNowPlaying(
+        token,
+        color,
+        (retryAfter) => poll = Math.max(poll, retryAfter),
+      );
+      if (display) {
+        // Re-order tokens
+        data.tokens.unshift(...data.tokens.splice(i, 1));
+        data.numRequests = 0;
+        return makeSpv2Response({ data, display, poll: 5000 });
+      }
+    } catch (e) {
+      if (e instanceof DidLogoutError) {
+        console.warn(token.access_token.slice(0, 8), "logged out");
+        data.tokens.splice(i--, 1);
+      }
+    }
+  }
+
+  console.info("nothing is playing, retry in:", Math.floor(poll / 1000), "s");
+  data.numRequests = Math.min((data.numRequests ?? 0) + 1, 31);
+  return makeSpv2Response({ data, poll });
+}
+
 export const handler: Handlers = {
   async POST(req, _) {
     const url = new URL(req.url);
@@ -277,44 +316,8 @@ export const handler: Handlers = {
     const color = timeOfDayBrightness({ brightness, hue });
 
     if (toggleAuth ? !data.auth : data.auth) {
-      const res = await authenticate(data, brightness);
-      if (res) {
-        return res;
-      }
+      return handleAuthentication(data, color);
     }
-    delete data.auth;
-
-    if (data.lastRequestAt && Date.now() >= data.lastRequestAt + 36001000) {
-      data.numRequests = 0;
-    }
-    data.lastRequestAt = Date.now();
-
-    let poll = requestBackoff(data.numRequests ?? 0);
-
-    for (let i = 0; data.tokens && i < data.tokens.length; ++i) {
-      const token = data.tokens[i];
-      try {
-        const display = await requestNowPlaying(
-          token,
-          color,
-          (retryAfter) => poll = Math.max(poll, retryAfter),
-        );
-        if (display) {
-          // Re-order tokens
-          data.tokens.unshift(...data.tokens.splice(i, 1));
-          data.numRequests = 0;
-          return makeSpv2Response({ data, display, poll: 5000 });
-        }
-      } catch (e) {
-        if (e instanceof DidLogoutError) {
-          console.warn(token.access_token.slice(0, 8), "logged out");
-          data.tokens.splice(i--, 1);
-        }
-      }
-    }
-
-    console.info("nothing is playing, retry in:", Math.floor(poll / 1000), "s");
-    data.numRequests = Math.min((data.numRequests ?? 0) + 1, 31);
-    return makeSpv2Response({ data, poll });
+    return handleAnyPlaying(data, color);
   },
 };
