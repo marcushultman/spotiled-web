@@ -1,9 +1,10 @@
 import type { Signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
-import { parseData } from "../src/spv2.ts";
+import { parseData, Token } from "../src/spv2.ts";
 
 interface SpotifyAuthToggleProps {
   isAuthenticating: Signal<boolean>;
+  tokens: Signal<Token[]>;
 }
 
 export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
@@ -20,8 +21,9 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
   };
   const poll = async () => {
     const res = await fetch("/led/spv2");
-    const { auth } = parseData(await res.text());
+    const { auth, tokens } = parseData(await res.text());
     props.isAuthenticating.value = auth !== undefined;
+    props.tokens.value = tokens ?? [];
     schedulePoll();
   };
   useEffect(schedulePoll, []);

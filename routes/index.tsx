@@ -27,7 +27,8 @@ export const handler: Handlers<Data> = {
 };
 
 export default function Home({ data: { states, deviceID, brightness, hue } }: PageProps<Data>) {
-  const { auth, tokens = [] } = parseData(states["/led/spv2"]);
+  const { auth, tokens: tokensValue = [] } = parseData(states["/led/spv2"]);
+  const tokens = useSignal(tokensValue);
   return (
     <div class="p-4 mx-auto">
       <div class="flex(& col) gap-4">
@@ -36,8 +37,8 @@ export default function Home({ data: { states, deviceID, brightness, hue } }: Pa
           <BrightnessSlider {...{ brightness, hue }} />
         </div>
 
-        <SpotifyAuthToggle isAuthenticating={useSignal(auth !== undefined)} />
-        <SpotifyTokens tokens={useSignal(tokens)} />
+        <SpotifyAuthToggle isAuthenticating={useSignal(auth !== undefined)} tokens={tokens} />
+        <SpotifyTokens tokens={tokens} />
 
         <form class="self-stretch flex gap-2" method="post" action={"/led/text"}>
           <input class="flex-1 border-1" name="text" placeholder="" />

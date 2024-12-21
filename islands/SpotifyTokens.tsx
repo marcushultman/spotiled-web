@@ -1,5 +1,4 @@
-import { Signal, useSignal } from "@preact/signals";
-import { useEffect } from "preact/hooks";
+import { Signal, useSignal, useSignalEffect } from "@preact/signals";
 import { Token } from "../src/spv2.ts";
 
 export interface SpotifyTokensProps {
@@ -30,9 +29,9 @@ export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
       }),
     );
 
-  useEffect(() => {
+  useSignalEffect(() => {
     lookupProfiles(tokens.value).then((p) => profiles.value = p);
-  }, []);
+  });
 
   return (
     <div class="py-2 flex flex-col">
