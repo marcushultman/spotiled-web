@@ -12,6 +12,9 @@ interface Profile {
   isPlaying: boolean;
 }
 
+const PLAYING_IMG_SRC =
+  "https://open.spotifycdn.com/cdn/images/equaliser-animated-green.f5eb96f2.gif";
+
 export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
   const profiles = useSignal<Profile[]>([]);
 
@@ -22,8 +25,7 @@ export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
           method: "GET",
           headers: { Authorization: `Bearer ${access_token}` },
         });
-        const { display_name: displayName = "", images: [{ url: image = undefined } = {}] } =
-          await res.json();
+        const { display_name: displayName = "", images: [{ url: image } = {}] } = await res.json();
         return { displayName, image, isPlaying: !!nowPlaying?.isPlaying };
       }),
     );
@@ -40,14 +42,7 @@ export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
           <div className="flex items-center gap-2">
             <img className="w-10 h-10 rounded-full" src={image} />
             <span className="flex-1">{displayName}</span>
-            {isPlaying
-              ? (
-                <img
-                  className="w-5 h-5"
-                  src="https://open.spotifycdn.com/cdn/images/equaliser-animated-green.f5eb96f2.gif"
-                />
-              )
-              : null}
+            {isPlaying ? <img className="w-5 h-5" src={PLAYING_IMG_SRC} /> : null}
           </div>
         ))}
       </div>
