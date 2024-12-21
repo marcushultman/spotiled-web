@@ -148,7 +148,7 @@ async function refreshToken(token: Token, color: Color, onRetryAfter: OnRetryAft
   });
 
   if (!res.ok) {
-    return new DidLogoutError();
+    throw new DidLogoutError();
   }
 
   const { access_token, refresh_token }: TokenData = await res.json();
@@ -163,7 +163,7 @@ async function requestNowPlaying(
   color: Color,
   onRetryAfter: OnRetryAfter,
   disableRetry = false,
-): Promise<Display | DidLogoutError | undefined> {
+): Promise<Display | void> {
   const res = await fetch(PLAYER_URL, {
     headers: { authorization: `Bearer ${token.access_token}` },
   });
@@ -293,19 +293,23 @@ export const handler: Handlers = {
 
     for (let i = 0; data.tokens && i < data.tokens.length; ++i) {
       const token = data.tokens[i];
-      const result = await requestNowPlaying(
-        token,
-        color,
-        (retryAfter) => poll = Math.max(poll, retryAfter),
-      );
-      if (result instanceof DidLogoutError) {
-        console.warn(token.access_token.slice(0, 8), "logged out");
-        data.tokens.splice(i--, 1);
-      } else if (result) {
-        // Re-order tokens
-        data.tokens.unshift(...data.tokens.splice(i, 1));
-        data.numRequests = 0;
-        return makeSpv2Response({ data, display: result, poll: 5000 });
+      try {
+        const display = await requestNowPlaying(
+          token,
+          color,
+          (retryAfter) => poll = Math.max(poll, retryAfter),
+        );
+        if (display) {
+          // Re-order tokens
+          data.tokens.unshift(...data.tokens.splice(i, 1));
+          data.numRequests = 0;
+          return makeSpv2Response({ data, display, poll: 5000 });
+        }
+      } catch (e) {
+        if (e instanceof DidLogoutError) {
+          console.warn(token.access_token.slice(0, 8), "logged out");
+          data.tokens.splice(i--, 1);
+        }
       }
     }
 
