@@ -188,6 +188,7 @@ async function requestNowPlaying(
 
   if (res.status == 204) {
     console.log("nothing is playing (204)");
+    delete token.nowPlaying;
     return;
   }
 
