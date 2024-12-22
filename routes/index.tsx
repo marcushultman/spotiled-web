@@ -37,7 +37,7 @@ export default function Home({ data: { states, deviceID, brightness, hue } }: Pa
           <BrightnessSlider {...{ brightness, hue }} />
         </div>
 
-        <SpotifyAuthToggle isAuthenticating={useSignal(auth !== undefined)} tokens={tokens} />
+        <SpotifyAuthToggle deviceCode={useSignal(auth?.deviceCode ?? null)} tokens={tokens} />
         <SpotifyTokens tokens={tokens} />
 
         <form class="self-stretch flex gap-2" method="post" action={"/led/text"}>
