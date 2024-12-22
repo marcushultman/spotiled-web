@@ -104,7 +104,6 @@ async function handleAuthentication(data: SPv2Data, color: Color) {
       data.auth = { deviceCode };
     }
     data.tokens = [await pollToken(deviceCode), ...data.tokens ?? []];
-    delete data.auth;
   } catch (e: unknown) {
     if (e instanceof AuthorizationPendingError) {
       console.log("authorization_pending");
@@ -271,6 +270,8 @@ function requestBackoff(numRequest: number) {
 }
 
 async function handleAnyPlaying(data: SPv2Data, color: Color) {
+  delete data.auth;
+
   if (data.lastRequestAt && Date.now() >= data.lastRequestAt + 36001000) {
     data.numRequests = 0;
   }
