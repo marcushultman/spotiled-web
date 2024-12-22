@@ -35,7 +35,6 @@ export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
 
   return (
     <div class="py-2 flex flex-col">
-      <h1 className="self-center text-lg pb-2">Spotify users</h1>
       <div className="flex flex-col gap-2">
         {profiles.value.map(({ displayName, isPlaying, image }) => (
           <div className="flex items-center gap-2">
@@ -45,6 +44,7 @@ export default function SpotifyTokens({ tokens }: SpotifyTokensProps) {
           </div>
         ))}
       </div>
+      <div className="bg-gray-200 w-full h-0.5 mt-2" />
     </div>
   );
 }
