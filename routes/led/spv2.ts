@@ -306,10 +306,17 @@ async function handleAnyPlaying(data: SPv2Data, color: Color) {
   return makeSpv2Response({ data, poll });
 }
 
+function handleLogout(index: number, data: SPv2Data, color: Color) {
+  const [token] = data.tokens?.splice(index, 1) ?? [];
+  console.info(token?.access_token.slice(0, 8), "logged out");
+  return handleAnyPlaying(data, color);
+}
+
 export const handler: Handlers = {
   async POST(req, _) {
     const url = new URL(req.url);
     const toggleAuth = url.searchParams.has("auth");
+    const logout = url.searchParams.has("logout");
     const data = await parseData<SPv2Data>(req, {});
 
     const kv = await Deno.openKv();
@@ -317,6 +324,10 @@ export const handler: Handlers = {
     const { brightness = 1, hue = 255 } = value ?? {};
     const color = timeOfDayBrightness({ brightness, hue });
 
+    if (logout) {
+      const index = url.searchParams.get("logout");
+      return handleLogout(Number(index), data, color);
+    }
     if (toggleAuth ? !data.auth : data.auth) {
       return handleAuthentication(data, color);
     }

@@ -15,6 +15,7 @@ import * as $led_text from "./routes/led/text.ts";
 import * as $ping from "./routes/ping.ts";
 import * as $settings2 from "./routes/settings2.ts";
 import * as $sports_index from "./routes/sports/index.tsx";
+import * as $BottomMenu from "./islands/BottomMenu.tsx";
 import * as $BrightnessSlider from "./islands/BrightnessSlider.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $SpotifyAuthToggle from "./islands/SpotifyAuthToggle.tsx";
@@ -38,6 +39,7 @@ const manifest = {
     "./routes/sports/index.tsx": $sports_index,
   },
   islands: {
+    "./islands/BottomMenu.tsx": $BottomMenu,
     "./islands/BrightnessSlider.tsx": $BrightnessSlider,
     "./islands/Counter.tsx": $Counter,
     "./islands/SpotifyAuthToggle.tsx": $SpotifyAuthToggle,
