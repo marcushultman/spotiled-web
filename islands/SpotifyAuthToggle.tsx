@@ -44,7 +44,12 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
           <div className="bg-gray-200 flex-1 h-0.5" />,
         ])(props.deviceCode.value?.user_code)
         : null}
-      <form class="flex justify-center" method="POST" action={"/led/spv2?auth"} onSubmit={toggle}>
+      <form
+        class="flex justify-center"
+        method="POST"
+        action={"/led/spv2?FAF&auth"}
+        onSubmit={toggle}
+      >
         <button type="submit">
           {props.deviceCode.value
             ? <img className="w-6 h-6" src={SPINNER_SRC} />
