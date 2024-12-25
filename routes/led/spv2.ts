@@ -95,7 +95,7 @@ async function pollToken(deviceCode: DeviceCode): Promise<Token> {
 
 const AUTHENTICATE_CANVAS = createCanvas(48, 16);
 
-async function handleAuthentication(data: SPv2Data, color: Color) {
+async function handleAuthentication(url: URL, data: SPv2Data, color: Color) {
   try {
     let { deviceCode } = data.auth ?? {};
 
@@ -135,7 +135,7 @@ async function handleAuthentication(data: SPv2Data, color: Color) {
     return makeSpv2Response({ data: { ...data, auth: {} }, poll: 5000 });
   }
 
-  return handleAnyPlaying(data, color);
+  return handleAnyPlaying(url, data, color);
 }
 
 type OnRetryAfter = (retryAfter: number) => void;
@@ -269,7 +269,7 @@ function requestBackoff(numRequest: number) {
   return 10000 * Math.floor(Math.min(1 << Math.max(numRequest, 1) - 1, maxFactor));
 }
 
-async function handleAnyPlaying(data: SPv2Data, color: Color) {
+async function handleAnyPlaying(url: URL, data: SPv2Data, color: Color) {
   delete data.auth;
 
   if (data.lastRequestAt && Date.now() >= data.lastRequestAt + 36001000) {
@@ -302,14 +302,18 @@ async function handleAnyPlaying(data: SPv2Data, color: Color) {
   }
 
   console.info("nothing is playing, retry in:", Math.floor(poll / 1000), "s");
-  data.numRequests = Math.min((data.numRequests ?? 0) + 1, 31);
+
+  if (!url.searchParams.has("force")) {
+    data.numRequests = Math.min((data.numRequests ?? 0) + 1, 31);
+  }
+
   return makeSpv2Response({ data, poll });
 }
 
-function handleLogout(index: number, data: SPv2Data, color: Color) {
+function handleLogout(index: number, url: URL, data: SPv2Data, color: Color) {
   const [token] = data.tokens?.splice(index, 1) ?? [];
   console.info(token?.access_token.slice(0, 8), "logged out");
-  return handleAnyPlaying(data, color);
+  return handleAnyPlaying(url, data, color);
 }
 
 export const handler: Handlers = {
@@ -326,11 +330,11 @@ export const handler: Handlers = {
 
     if (logout) {
       const index = url.searchParams.get("logout");
-      return handleLogout(Number(index), data, color);
+      return handleLogout(Number(index), url, data, color);
     }
     if (toggleAuth ? !data.auth : data.auth) {
-      return handleAuthentication(data, color);
+      return handleAuthentication(url, data, color);
     }
-    return handleAnyPlaying(data, color);
+    return handleAnyPlaying(url, data, color);
   },
 };

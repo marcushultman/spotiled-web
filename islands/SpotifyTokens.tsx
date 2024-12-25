@@ -1,5 +1,5 @@
 import { Signal, useSignal, useSignalEffect } from "@preact/signals";
-import { Token } from "../src/spv2.ts";
+import { parseData, Token } from "../src/spv2.ts";
 
 export interface SpotifyTokensProps {
   tokens: Signal<Token[]>;
@@ -33,7 +33,11 @@ export default function SpotifyTokens({ tokens, selectedToken }: SpotifyTokensPr
     lookupProfiles(tokens.value).then((p) => profiles.value = p);
   });
 
-  const onSelect = (token: Token) => {
+  const onSelect = async (token: Token) => {
+    const res = await fetch("/led/spv2?force", { method: "post" });
+    const data = parseData(await res.text());
+    tokens.value = data.tokens ?? [];
+
     selectedToken.value = selectedToken.value?.access_token === token.access_token
       ? undefined
       : token;
