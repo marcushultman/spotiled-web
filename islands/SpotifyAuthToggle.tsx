@@ -7,7 +7,7 @@ const SPINNER_SRC = "https://upload.wikimedia.org/wikipedia/commons/d/de/Ajax-lo
 const SPOTIFY_ICON_SRC = "https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg";
 
 interface SpotifyAuthToggleProps {
-  deviceCode: Signal<Partial<DeviceCode> | null>;
+  auth: Signal<{ deviceCode?: DeviceCode } | undefined>;
   tokens: Signal<Token[]>;
 }
 
@@ -15,20 +15,20 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
   const [timeoutHandle, setTimeoutHandle] = useState<number>();
 
   const schedulePoll = () => {
-    if (props.deviceCode.value) {
-      setTimeoutHandle(setTimeout(poll, props.deviceCode.value.user_code ? 3000 : 100));
+    if (props.auth.value) {
+      setTimeoutHandle(setTimeout(poll, props.auth.value.deviceCode ? 3000 : 500));
     } else {
       clearTimeout(timeoutHandle);
     }
   };
   const toggle = () => {
-    props.deviceCode.value = props.deviceCode.value ? null : {};
+    props.auth.value = props.auth.value ? undefined : {};
     schedulePoll();
   };
   const poll = async () => {
     const res = await fetch("/led/spv2");
     const { auth, tokens } = parseData(await res.text());
-    props.deviceCode.value = auth?.deviceCode ?? null;
+    props.auth.value = auth;
     props.tokens.value = tokens ?? [];
     schedulePoll();
   };
@@ -38,11 +38,11 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
     <div class="flex gap-4 items-center">
       <img className="w-6 h-6" src={SPOTIFY_ICON_SRC} />
       <div className="bg-gray-200 flex-1 h-0.5" />
-      {props.deviceCode.value?.user_code
+      {props.auth.value?.deviceCode?.user_code
         ? ((code: string) => [
           <a href={`https://spotify.com/pair?code=${code}`}>{code}</a>,
           <div className="bg-gray-200 flex-1 h-0.5" />,
-        ])(props.deviceCode.value?.user_code)
+        ])(props.auth.value.deviceCode.user_code)
         : null}
       <form
         class="flex justify-center"
@@ -51,7 +51,7 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
         onSubmit={toggle}
       >
         <button type="submit">
-          {props.deviceCode.value
+          {props.auth.value
             ? <img className="w-6 h-6" src={SPINNER_SRC} />
             : <UserPlus className="w-6 h-6" />}
         </button>

@@ -1,5 +1,5 @@
-import { type Signal, useComputed } from "@preact/signals";
-import { Token } from "../src/spv2.ts";
+import { batch, type Signal, useComputed } from "@preact/signals";
+import { parseData, Token } from "../src/spv2.ts";
 
 interface BottomMenuProps {
   tokens: Signal<Token[]>;
@@ -7,17 +7,18 @@ interface BottomMenuProps {
 }
 
 export default function BottomMenu({ tokens, token }: BottomMenuProps) {
-  const index = tokens.value.findIndex(({ access_token }) =>
-    access_token === token.value?.access_token
-  );
   const item = useComputed(() => {
+    const index = tokens.value.findIndex((t) => t.access_token === token.value?.access_token);
     return {
       show: !!token.value,
       label: `Logout`,
-      onClick: () => {
-        token.value = undefined;
-        tokens.value = tokens.value.filter((_, i) => i !== index);
-        fetch(`/led/spv2?logout=${index}`, { method: "post" });
+      onClick: async () => {
+        const res = await fetch(`/led/spv2?logout=${index}`, { method: "post" });
+        const data = parseData(await res.text());
+        batch(() => {
+          token.value = undefined;
+          tokens.value = data.tokens ?? [];
+        });
       },
     };
   });
