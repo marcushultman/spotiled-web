@@ -11,7 +11,7 @@ function FootballFixture({ response, enabled }: { response: FixtureResponse; ena
   const id = `/led/sports/${fixtureId}`;
 
   return (
-    <form method="post" action={`${id}?FAF&toggle`}>
+    <form method="post" action={`${id}?toggle`}>
       <button
         className={`w-full hover:bg-gray-100 p-2 flex gap-2 items-stretch h-28 ${
           enabled ? "bg-red-400" : ""

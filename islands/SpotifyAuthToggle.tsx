@@ -47,7 +47,7 @@ export default function SpotifyAuthToggle(props: SpotifyAuthToggleProps) {
       <form
         class="flex justify-center"
         method="POST"
-        action={"/led/spv2?FAF&auth"}
+        action={"/led/spv2?auth"}
         onSubmit={toggle}
       >
         <button type="submit">

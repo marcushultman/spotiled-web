@@ -53,12 +53,12 @@ export default function Home({ data: { states, deviceID, brightness, hue } }: Pa
         <SpotifyAuthToggle auth={auth} tokens={tokens} />
         <SpotifyTokens {...{ tokens, selectedToken }} />
 
-        <form class="self-stretch flex gap-2" method="post" action={"/led/text?FAF"}>
+        <form class="self-stretch flex gap-2" method="post" action={"/led/text"}>
           <input class="flex-1 border-1" name="text" placeholder="" />
           <input class="px-4 py-2 rounded-full" type="submit" value="Send" />
         </form>
 
-        <form method="post" action={`/led/flag?FAF`}>
+        <form method="post" action={`/led/flag`}>
           <button class="w-full" type="submit">Flag</button>
         </form>
 
